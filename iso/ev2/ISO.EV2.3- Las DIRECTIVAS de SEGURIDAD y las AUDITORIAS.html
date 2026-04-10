@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz: GPOs y Auditorías</title>
+    <style>
+        :root { --p: #e11d48; --s: #4b5563; --bg: #fff1f2; --txt: #111827; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid #fecdd3; }
+        .progress { height: 10px; background: #ffe4e6; border-radius: 10px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.5s ease-in-out; }
+        .opt { display: block; width: 100%; padding: 1.1rem; margin: 0.8rem 0; border: 2px solid #f3f4f6; border-radius: 12px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #fff1f2; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: bold; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 10px; cursor: pointer; float: right; display: none; font-weight: bold; }
+        #results { display: none; text-align: center; }
+        .label { font-size: 0.75rem; color: var(--p); font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.5rem; display: block; }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <span class="label">Seguridad y Control de Auditoría</span>
+        <h2 style="margin: 0;">Directivas de Grupo (GPO)</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <p id="counter" style="color: var(--s); font-size: 0.9rem; margin-bottom: 1.5rem;"></p>
+        <h3 id="question" style="min-height: 4rem;"></h3>
+        <div id="options"></div>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results">
+        <h2 style="color:var(--p)">Informe de Seguridad Finalizado</h2>
+        <div style="font-size: 5rem; margin: 1.5rem 0; font-weight: 900; color: var(--p);" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.1rem; margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2.5rem; background: var(--s); color:white; border:none; border-radius:10px; cursor:pointer;">Reiniciar Auditoría</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { q: "¿Qué significan las siglas GPO?", a: ["General Process Order", "Group Policy Object (Objeto de Directiva de Grupo)", "Global Private Operation", "General Power Option"], c: 1 },
+        { q: "¿A qué niveles se pueden vincular las GPO principalmente?", a: ["Solo a usuarios", "Sitios, Dominios y Unidades Organizativas (UOs)", "Solo al Panel de Control", "A impresoras y monitores"], c: 1 },
+        { q: "¿Cuál es la jerarquía de aplicación de las directivas (de primera a última)?", a: ["Dominio -> Sitio -> UO -> Local", "Local -> Sitio -> Dominio -> Unidad Organizativa", "UO -> Dominio -> Local", "No hay orden de aplicación"], c: 1 },
+        { q: "¿Qué sucede si hay un conflicto entre una GPO de Dominio y una de UO?", a: ["Prevalece la de Dominio por ser superior", "Prevalece la de la Unidad Organizativa por ser la más cercana al objeto", "Se anulan ambas", "Gana la más antigua"], c: 1 },
+        { q: "¿Qué comando se usa para forzar la actualización de las directivas en un cliente?", a: ["ipconfig /renew", "gpupdate /force", "gpo /start", "net user /update"], c: 1 },
+        { q: "¿Qué directiva viene creada por defecto para afectar a todos los usuarios del dominio?", a: ["Default Domain Policy", "Default Controllers Policy", "All Users GPO", "Global Security Policy"], c: 0 },
+        { q: "¿Qué herramienta permite crear y administrar las GPOs en Windows Server?", a: ["Active Directory Users and Computers", "Consola de Administración de Directivas de Grupo (gpmc.msc)", "Panel de Control", "Visor de Eventos"], c: 1 },
+        { q: "¿Qué es la 'Herencia' en las GPOs?", a: ["Recibir dinero de otra GPO", "Que una UO hija recibe automáticamente las directivas vinculadas a su UO padre", "Borrar las directivas antiguas", "Copiar y pegar directivas"], c: 1 },
+        { q: "¿Para qué sirve la opción 'Bloquear Herencia'?", a: ["Para que el usuario no herede archivos", "Para evitar que las GPOs de niveles superiores se apliquen a esa UO", "Para apagar el servidor", "Para ocultar el dominio"], c: 1 },
+        { q: "¿Qué es una 'Auditoría' en Windows Server?", a: ["Un virus benigno", "Un mecanismo para rastrear y registrar acciones de los usuarios en el Visor de Eventos", "Un programa de contabilidad", "Una copia de seguridad"], c: 1 },
+        { q: "¿Dónde se consultan los resultados de las auditorías (eventos)?", a: ["Administrador de discos", "Visor de Eventos (Sección Seguridad)", "Directivas de grupo", "Explorador de archivos"], c: 1 },
+        { q: "Si queremos saber quién ha borrado un archivo, debemos activar:", a: ["Auditoría de inicio de sesión", "Auditoría de acceso a objetos", "Auditoría de gestión de cuentas", "Auditoría de cambios en el sistema"], c: 1 },
+        { q: "¿Qué dos tipos de eventos se pueden auditar?", a: ["Inicio y fin", "Correcto (Éxito) e Incorrecto (Fallo)", "Nuevos y viejos", "De administrador y de usuario"], c: 1 },
+        { q: "¿Qué es un script de inicio de sesión (Logon Script)?", a: ["Un virus", "Un archivo (ej. .bat) que ejecuta comandos cuando el usuario entra al sistema", "Una contraseña larga", "Un manual de uso"], c: 1 },
+        { q: "¿Cuál es el código de evento (Event ID) común para el acceso a objetos en auditoría?", a: ["100", "4663", "999", "21"], c: 1 },
+        { q: "¿Se puede aplicar una GPO directamente a un grupo de seguridad?", a: ["Sí, siempre", "No, se vinculan a contenedores (Sitio/Dom/UO), aunque se puede filtrar por grupos", "Solo en Windows 11", "Solo si el grupo es administrador"], c: 1 },
+        { q: "¿Qué sucede si marcas una GPO como 'Exigida' (Enforced)?", a: ["Se borra si hay errores", "Prevalece sobre cualquier bloqueo de herencia de niveles inferiores", "Solo se aplica a administradores", "Pide contraseña al aplicarse"], c: 1 },
+        { q: "¿Para qué sirve la asignación de unidades de red mediante GPO?", a: ["Para que el usuario tenga internet", "Para mapear carpetas compartidas automáticamente como letras de unidad (ej. Z:)", "Para cambiar el hardware del PC", "Para formatear discos"], c: 1 },
+        { q: "¿Qué es el filtrado de seguridad en una GPO?", a: ["Un antivirus", "Limitar la aplicación de la GPO a ciertos usuarios o grupos dentro de la UO", "Borrar usuarios inactivos", "Poner una contraseña a la directiva"], c: 1 },
+        { q: "¿En qué pestaña del Visor de Eventos se ve qué usuario modificó un archivo auditado?", a: ["Detalles (o General, dentro del registro de Seguridad)", "Instalación", "Aplicación", "Sistema"], c: 0 }
+    ];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `Módulo de Seguridad: ${current + 1} de ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        document.getElementById('next').style.display = 'block';
+    }
+
+    function loadNext() {
+        current++;
+        if (current < data.length) render();
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score >= 18) m.innerText = "¡Experto en Directivas! Tienes un control total sobre la seguridad del dominio.";
+        else if(score >= 14) m.innerText = "Buen nivel. Comprendes cómo funciona la herencia y las auditorías.";
+        else m.innerText = "Repasa el orden de aplicación de las GPOs (LSDOU) y cómo configurar auditorías de objetos.";
+    }
+
+    render();
+</script>
+</body>
+</html>
