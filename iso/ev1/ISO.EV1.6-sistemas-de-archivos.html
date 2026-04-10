@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz: Sistemas de Archivos</title>
+    <style>
+        :root { --p: #10b981; --s: #64748b; --bg: #f8fafc; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 4px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s ease; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.7rem 0; border: 2px solid #f1f5f9; border-radius: 10px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f0fdf4; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 8px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .tag { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: var(--s); }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="header-info">
+            <span class="tag">ISO - Unidad 06</span>
+            <span id="counter" style="color: var(--s); font-size: 0.85rem;"></span>
+        </div>
+        <h2 style="margin: 0 0 1.5rem 0; color: #064e3b;">Sistemas de Archivos</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 id="question" style="line-height: 1.4;"></h3>
+        <div id="options"></div>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results">
+        <h2 style="color:var(--p)">Simulación Finalizada</h2>
+        <div style="font-size: 4.5rem; margin: 1.5rem 0; font-weight: 800; color: #065f46;" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.1rem; color: var(--s); margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2.5rem; background: var(--p); color:white; border:none; border-radius:8px; cursor:pointer; font-weight: bold;">Reintentar Test</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { q: "¿Cuál es el objetivo principal de los sistemas de archivos (FS)?", a: ["Aumentar la velocidad de internet", "Ofrecer un manejo fácil y lógico de archivos abstrayéndose del hardware", "Limpiar el polvo del disco duro", "Borrar archivos automáticamente"], c: 1 },
+        { q: "¿Qué estructura jerárquica utilizan los directorios para organizar la información?", a: ["Estructura lineal", "Estructura de red", "Estructura de árbol", "Estructura circular"], c: 2 },
+        { q: "En Windows, ¿cuántos caracteres permitía el nombre de archivo en MS-DOS (regla 8+3)?", a: ["255 caracteres", "8 caracteres y extensión de 3", "Ilimitados", "1024 caracteres"], c: 1 },
+        { q: "¿Qué atributo indica que un archivo no se puede modificar, solo leer?", a: ["Atributo S (Sistema)", "Atributo H (Oculto)", "Atributo R (Solo lectura)", "Atributo A (Archivo)"], c: 2 },
+        { q: "El comodín '*' se utiliza para:", a: ["Sustituir a un único carácter", "Sustituir a todos los caracteres de un nombre", "Borrar el archivo", "Cifrar el nombre"], c: 1 },
+        { q: "¿Qué tipo de archivo no ejecutable almacena configuraciones necesarias para el SO (ej. .ini, .dll)?", a: ["Archivos de Audio", "Archivos de Sistema", "Archivos Comprimidos", "Formatos Propietarios"], c: 1 },
+        { q: "¿Cómo se llama el directorio especial que contiene a todos los demás?", a: ["Directorio Activo", "Subdirectorio", "Directorio Raíz", "Directorio Temporal"], c: 2 },
+        { q: "¿Qué define una 'Ruta Absoluta'?", a: ["El camino desde el directorio activo", "El camino desde el directorio raíz", "El tamaño total del archivo", "La fecha de creación"], c: 1 },
+        { q: "Un bloque de disco está compuesto por:", a: ["Un solo archivo", "Un número determinado de sectores", "Un programa entero", "Una tabla FAT"], c: 1 },
+        { q: "¿Qué sucede si el tamaño del bloque es muy grande?", a: ["Se pierde rendimiento de lectura", "Se desaprovecha espacio", "El disco gira más rápido", "No se pueden guardar videos"], c: 1 },
+        { q: "¿Qué sistema de archivos utiliza Windows basado en una tabla de índices?", a: ["EXT4", "HFS+", "FAT (File Allocation Table)", "ZFS"], c: 2 },
+        { q: "¿Qué técnica utilizan los sistemas Linux para asociar atributos y bloques a cada archivo?", a: ["FAT32", "Inodos", "MBR", "GPT"], c: 1 },
+        { q: "¿Cuál es el límite de tamaño máximo de archivo en FAT32?", a: ["2 GB", "4 GB", "16 TB", "1 EB"], c: 1 },
+        { q: "¿Qué sistema de archivos soporta dominios, cuotas de disco, cifrado y compresión?", a: ["FAT16", "NTFS", "EXT3", "FAT32"], c: 1 },
+        { q: "¿Cuál es el tamaño máximo de volumen que soporta NTFS?", a: ["2 GB", "32 TB", "16 TB", "1 EB"], c: 2 },
+        { q: "¿Qué característica especial tiene EXT3 y EXT4 para recuperarse de fallos?", a: ["Compresión de audio", "Registro de diario (Journaling)", "Cifrado biométrico", "Eliminación de virus"], c: 1 },
+        { q: "¿Qué sistema de archivos es nativo de MAC OS (8.1 en adelante)?", a: ["NTFS", "EXT4", "HFS+", "FAT16"], c: 2 },
+        { q: "¿Qué significa que un sistema de archivos distinga entre mayúsculas y minúsculas?", a: ["Que las mayúsculas ocupan más espacio", "Que Archivo.txt y archivo.txt son ficheros distintos", "Que solo se puede escribir en mayúsculas", "Que no permite usar números"], c: 1 },
+        { q: "¿Cuál es el tamaño máximo de volumen en EXT4?", a: ["2 GB", "32 TB", "1 EB (Exabyte)", "16 TB"], c: 2 },
+        { q: "El tamaño medio de archivos en Windows/Linux es de 1KB, por lo que los bloques estándar suelen ser de:", a: ["32 KB", "1 MB", "512 bytes, 1KB o 2KB", "10 KB"], c: 2 }
+    ];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        document.getElementById('next').style.display = 'block';
+        if(current === data.length - 1) document.getElementById('next').innerText = "Ver Mi Nota";
+    }
+
+    function loadNext() {
+        current++;
+        if (current < data.length) render();
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score >= 18) m.innerText = "¡Excelente! Dominas a la perfección la gestión de archivos y sistemas de almacenamiento.";
+        else if(score >= 14) m.innerText = "¡Buen trabajo! Conoces las diferencias entre FAT, NTFS y sistemas Linux.";
+        else m.innerText = "Te recomendamos repasar las tablas comparativas de sistemas de archivos y el concepto de rutas.";
+    }
+
+    render();
+</script>
+</body>
+</html>
