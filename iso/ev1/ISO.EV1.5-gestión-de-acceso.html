@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz: Gestión de Acceso en Windows</title>
+    <style>
+        :root { --p: #2563eb; --s: #475569; --bg: #f8fafc; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .progress { height: 10px; background: #e2e8f0; border-radius: 5px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.5s ease; }
+        .opt { display: block; width: 100%; padding: 1.2rem; margin: 0.8rem 0; border: 2px solid #f1f5f9; border-radius: 8px; text-align: left; cursor: pointer; background: #f1f5f9; font-size: 1rem; transition: all 0.2s; }
+        .opt:hover { border-color: var(--p); background: #eff6ff; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: bold; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2rem; border-radius: 8px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .category { font-size: 0.8rem; font-weight: bold; color: var(--p); text-transform: uppercase; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="category">Unidad 5: Seguridad y Acceso</div>
+        <h2 style="margin-top: 0.5rem;">Gestión del Acceso en Sistemas Operativos</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <p id="counter" style="color: var(--s); font-size: 0.9rem;"></p>
+        <h3 id="question"></h3>
+        <div id="options"></div>
+        <button id="next" onclick="loadNext()">Continuar</button>
+    </div>
+
+    <div id="results">
+        <h2 style="color:var(--p)">Resultado del Examen</h2>
+        <div style="font-size: 4rem; margin: 1.5rem 0;" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.2rem; margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2rem; background: var(--s); color:white; border:none; border-radius:8px; cursor:pointer;">Repetir Test</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { q: "¿Qué proceso se encarga de demostrar que usted es quien dice ser mediante un login?", a: ["Autorización", "Autentificación", "Auditoría", "Encriptación"], c: 1 },
+        { q: "¿Qué función cumple la 'Autorización' en el sistema?", a: ["Verificar la contraseña", "Comprobar si el usuario tiene derechos para usar un recurso", "Cifrar el disco duro", "Crear copias de seguridad"], c: 1 },
+        { q: "¿Cómo se llama la lista donde aparecen los usuarios y sus permisos sobre un recurso?", a: ["UAC", "SID", "ACL (Lista de Control de Acceso)", "LUSRMGR"], c: 2 },
+        { q: "¿Qué comando permite acceder a la gestión avanzada de usuarios y grupos locales (consola)?", a: ["lusrmgr.msc", "secpol.msc", "gpedit.msc", "control userpasswords2"], c: 0 },
+        { q: "¿Cuál es la cuenta de usuario con todos los derechos sobre el equipo que no debe eliminarse?", a: ["Invitado", "Administrador", "System", "DefaultAccount"], c: 1 },
+        { q: "¿Qué es el SID (Security Identifier)?", a: ["Un tipo de contraseña", "Un número de identificación único (como el DNI) para cada usuario", "El nombre de usuario en red", "Un protocolo de internet"], c: 1 },
+        { q: "Si borras un usuario y creas otro con el mismo nombre, ¿podrá acceder a los archivos del anterior?", a: ["Sí, porque se llaman igual", "No, porque el SID es diferente y Windows identifica por el SID", "Sí, si tiene la misma contraseña", "Sólo si es administrador"], c: 1 },
+        { q: "¿Qué comando se usa en el símbolo del sistema para ver el SID de tu usuario actual?", a: ["net user", "whoami /user", "ipconfig", "dir /sid"], c: 1 },
+        { q: "¿Para qué sirve el comando 'runas'?", a: ["Para borrar archivos", "Para abrir una consola suplantando a otro usuario sin cerrar sesión", "Para reiniciar el equipo", "Para cambiar la IP"], c: 1 },
+        { q: "¿Qué es un 'Grupo' en Windows?", a: ["Un conjunto de carpetas", "Un conjunto de cuentas de usuario que se administran como una sola unidad", "Una red de ordenadores", "Un programa de chat"], c: 1 },
+        { q: "¿Qué herramienta se abre con el comando 'secpol.msc'?", a: ["Panel de Control", "Directivas de seguridad local", "Administrador de discos", "Editor del registro"], c: 1 },
+        { q: "En las Directivas de Seguridad, ¿qué hace la opción 'Vigencia máxima de la contraseña'?", a: ["Impide que el usuario use contraseñas cortas", "Obliga al usuario a cambiar la contraseña tras un tiempo determinado", "Bloquea la cuenta tras 3 intentos", "Oculta la contraseña"], c: 1 },
+        { q: "¿Qué parámetro de bloqueo indica el número de intentos fallidos permitidos antes de cerrar la cuenta?", a: ["Duración del bloqueo", "Umbral de bloqueo de la cuenta", "Restablecer contador", "Historial de contraseñas"], c: 1 },
+        { q: "¿Qué significan las siglas UAC?", a: ["User Access Control", "User Account Control (Control de Cuentas de Usuario)", "Universal Access Center", "Unit Account Code"], c: 1 },
+        { q: "¿Cuál es el objetivo principal del UAC?", a: ["Hacer el sistema más rápido", "Notificar cambios importantes y evitar instalación de software sin consentimiento", "Vigilar el historial del navegador", "Gestionar la memoria RAM"], c: 1 },
+        { q: "¿Qué comando abre el Editor de directivas de grupo local?", a: ["lusrmgr.msc", "gpedit.msc", "cmd.exe", "msconfig"], c: 1 },
+        { q: "En un SID (ej. S-1-5-21-...-1001), ¿qué representa el último número (1001)?", a: ["El número del servidor", "El RID (Identificador relativo del usuario)", "El año de creación", "La versión de Windows"], c: 1 },
+        { q: "El RID del Administrador siempre es:", a: ["1000", "500", "0", "1"], c: 1 },
+        { q: "¿Qué comando de consola se usa para crear un nuevo usuario?", a: ["NET USER username password /ADD", "CREATE USER username", "ADD-ACCOUNT username", "NET LOCALGROUP /ADD"], c: 0 },
+        { q: "¿Qué comando permite añadir un usuario a un grupo local?", a: ["NET USER /ADD", "NET LOCALGROUP groupname username /ADD", "GROUP ADD user", "USRMGR /GROUP"], c: 1 }
+    ];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        document.getElementById('next').style.display = 'block';
+    }
+
+    function loadNext() {
+        current++;
+        if (current < data.length) render();
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score >= 18) m.innerText = "¡Excelente! Eres un experto en seguridad y gestión de usuarios.";
+        else if(score >= 14) m.innerText = "¡Muy bien! Tienes claros los conceptos de administración de acceso.";
+        else m.innerText = "Te recomendamos repasar los conceptos de SID, ACL y comandos NET USER.";
+    }
+
+    render();
+</script>
+</body>
+</html>
