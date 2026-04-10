@@ -50,4 +50,72 @@
         { q: "¿Qué caracteriza a un 'Disco Dinámico'?", a: ["Es más lento que el básico", "Permite crear volúmenes que se extienden por varios discos físicos", "Solo funciona en Windows 98", "No permite usar NTFS"], c: 1 },
         { q: "¿Qué sucede con los datos al convertir un disco básico en dinámico?", a: ["Se borran todos los datos", "Se mantienen los datos (pero es recomendable copia de seguridad)", "El disco se bloquea", "Se requiere formatear"], c: 1 },
         { q: "¿Qué es un 'Volumen Distribuido'?", a: ["Un volumen que suma el espacio de varios discos (hasta 32) de forma secuencial", "Un volumen que hace espejo de los datos", "Un volumen para instalar solo juegos", "Un volumen que mejora la velocidad de lectura"], c: 0 },
-        { q: "¿Qué es un 'Volumen Seccionado' (RAID-0)?", a: ["Escribe datos en bandas en varios discos para aumentar la velocidad", "Crea una copia exacta en dos discos", "Protege contra
+        { q: "¿Qué es un 'Volumen Seccionado' (RAID-0)?", a: ["Escribe datos en bandas en varios discos para aumentar la velocidad", "Crea una copia exacta en dos discos", "Protege contra fallos de disco", "Solo usa un disco físico"], c: 0 },
+        { q: "¿Qué ocurre si falla un disco en un Volumen Seccionado (RAID-0)?", a: ["El sistema sigue funcionando", "Se pierden todos los datos del volumen", "Solo se pierde la mitad de la información", "El sistema lo repara automáticamente"], c: 1 },
+        { q: "¿Qué es un 'Volumen Reflejado' (RAID-1)?", a: ["Suma el tamaño de dos discos", "Duplica los datos en dos discos físicos para tolerancia a fallos", "Es el más rápido de todos", "No necesita discos dinámicos"], c: 1 },
+        { q: "¿Cuántos discos físicos se necesitan como mínimo para un Volumen Reflejado?", a: ["1", "2", "3", "5"], c: 1 },
+        { q: "¿Qué consola se utiliza para gestionar particiones y volúmenes?", a: ["services.msc", "diskmgmt.msc (Administración de discos)", "compmgmt.msc", "eventvwr.msc"], c: 1 },
+        { q: "¿Qué es un Volumen RAID-5?", a: ["Una copia espejo simple", "Datos y paridad distribuidos en al menos 3 discos", "Solo para copias de seguridad", "Un disco básico"], c: 1 },
+        { q: "¿Qué es una Copia de Seguridad 'Normal' o Total?", a: ["Copia solo lo que ha cambiado hoy", "Copia todos los archivos seleccionados y los marca como copiados", "No marca los archivos", "Copia solo archivos de sistema"], c: 1 },
+        { q: "¿Qué diferencia a la Copia de Seguridad 'Incremental'?", a: ["Copia todo cada vez", "Copia solo archivos creados o cambiados desde la última copia normal o incremental", "Borra el disco de destino", "Es la más lenta"], c: 1 },
+        { q: "¿Qué es la Copia de Seguridad 'Diferencial'?", a: ["Copia archivos cambiados desde la última copia normal y NO los marca como copiados", "Copia todo el sistema operativo", "Es lo mismo que la incremental", "Solo copia fotos"], c: 0 },
+        { q: "Para restaurar una copia diferencial necesitas:", a: ["Solo la última diferencial", "La última copia normal y la última diferencial", "Todas las copias diferenciales", "Solo la copia incremental"], c: 1 },
+        { q: "¿Qué herramienta se usa para programar copias automáticas en Windows Server?", a: ["Paint", "Copias de seguridad de Windows Server (Windows Server Backup)", "Calculadora", "Bloc de notas"], c: 1 },
+        { q: "¿A qué se refiere el término 'Tolerancia a fallos'?", a: ["A que el usuario no cometa errores", "A la capacidad del sistema de seguir funcionando tras el fallo de un componente hardware", "A que la batería dure más", "A no necesitar contraseñas"], c: 1 },
+        { q: "Un disco 'Sin inicializar' en la consola de discos aparece con una barra de color:", a: ["Azul", "Negra", "Roja", "Verde"], c: 1 }
+    ];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `Pág. ${current + 1} / ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        document.getElementById('next').style.display = 'block';
+    }
+
+    function loadNext() {
+        current++;
+        if (current < data.length) render();
+        else {
+            document.getElementById('quiz-area').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+            const m = document.getElementById('eval-msg');
+            if(score >= 17) m.innerText = "¡Nivel Administrador! Dominas la gestión de servidores y discos.";
+            else if(score >= 12) m.innerText = "Buen conocimiento de Windows Server, repasa los tipos de RAID.";
+            else m.innerText = "Repasa los conceptos de discos dinámicos y estrategias de backup.";
+        }
+    }
+
+    render();
+</script>
+</body>
+</html>
