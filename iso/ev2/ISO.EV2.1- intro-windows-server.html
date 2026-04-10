@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz: Introducción a Windows Server</title>
+    <style>
+        :root { --p: #6366f1; --s: #475569; --bg: #f3f4f6; --txt: #1f2937; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 10px; background: #e5e7eb; border-radius: 5px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s ease; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.7rem 0; border: 2px solid #f3f4f6; border-radius: 8px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #eef2ff; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 6px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .badge { background: #eef2ff; color: var(--p); padding: 4px 12px; border-radius: 15px; font-size: 0.8rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="badge">Windows Server & Discos</span>
+            <span id="counter" style="color: var(--s); font-size: 0.85rem;"></span>
+        </div>
+        <h2 style="margin: 1rem 0; color: #312e81;">Administración de Windows Server</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 id="question"></h3>
+        <div id="options"></div>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results">
+        <h2 style="color:var(--p)">Resultados de la Evaluación</h2>
+        <div style="font-size: 4rem; margin: 1.5rem 0; font-weight: bold;" id="score-val"></div>
+        <p id="eval-msg" style="margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2rem; background: var(--p); color:white; border:none; border-radius:6px; cursor:pointer;">Reiniciar Quiz</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { q: "¿Cuál es la principal diferencia entre las versiones Standard y Datacenter de Windows Server?", a: ["Standard no tiene interfaz gráfica", "Datacenter permite virtualización ilimitada de instancias de Windows Server", "Standard solo admite un disco duro", "Datacenter es solo para modo texto"], c: 1 },
+        { q: "¿Qué opción de instalación consume menos recursos al omitir la interfaz gráfica?", a: ["Servidor con GUI", "Experiencia de escritorio", "Server Core", "Instalación completa"], c: 2 },
+        { q: "¿Cuál es el sistema de archivos recomendado por defecto para Windows Server?", a: ["FAT32", "NTFS", "EXT4", "HPFS"], c: 1 },
+        { q: "¿Qué es un 'Disco Básico'?", a: ["Un disco que no permite particiones", "Un disco físico que contiene particiones primarias y extendidas", "Un disco virtual en la nube", "Un disco sin formato"], c: 1 },
+        { q: "¿Qué caracteriza a un 'Disco Dinámico'?", a: ["Es más lento que el básico", "Permite crear volúmenes que se extienden por varios discos físicos", "Solo funciona en Windows 98", "No permite usar NTFS"], c: 1 },
+        { q: "¿Qué sucede con los datos al convertir un disco básico en dinámico?", a: ["Se borran todos los datos", "Se mantienen los datos (pero es recomendable copia de seguridad)", "El disco se bloquea", "Se requiere formatear"], c: 1 },
+        { q: "¿Qué es un 'Volumen Distribuido'?", a: ["Un volumen que suma el espacio de varios discos (hasta 32) de forma secuencial", "Un volumen que hace espejo de los datos", "Un volumen para instalar solo juegos", "Un volumen que mejora la velocidad de lectura"], c: 0 },
+        { q: "¿Qué es un 'Volumen Seccionado' (RAID-0)?", a: ["Escribe datos en bandas en varios discos para aumentar la velocidad", "Crea una copia exacta en dos discos", "Protege contra
