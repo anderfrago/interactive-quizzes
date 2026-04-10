@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz: Administración de Windows 11</title>
+    <style>
+        :root { --p: #0078d4; --s: #475569; --bg: #f3f4f6; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 750px; width: 100%; padding: 2.5rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 4px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.6rem 0; border: 2px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; background: white; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f0f7ff; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 0.8rem 2.5rem; border-radius: 6px; cursor: pointer; float: right; display: none; font-weight: bold; }
+        #results { display: none; text-align: center; }
+        .info { font-size: 0.85rem; color: var(--s); margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <h2 style="color:var(--p); margin-top:0;">Quiz: Administración de Windows 11</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <div class="info" id="counter"></div>
+        <h3 id="question" style="margin-bottom: 1.5rem;"></h3>
+        <div id="options"></div>
+        <div id="feedback" style="margin-top:1.5rem; padding: 1rem; border-radius: 8px; display:none;"></div>
+        <button id="next" onclick="loadNext()">Siguiente Pregunta</button>
+    </div>
+
+    <div id="results">
+        <h2 style="color:var(--p)">¡Evaluación Finalizada!</h2>
+        <div style="font-size: 4rem; font-weight: bold; margin: 1rem 0;" id="score-val"></div>
+        <p id="msg" style="margin-bottom: 2rem; font-size: 1.1rem;"></p>
+        <button onclick="location.reload()" style="padding: 0.8rem 2rem; background: var(--p); color:white; border:none; border-radius:6px; cursor:pointer;">Reiniciar Intento</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { q: "¿Cuál es el nuevo enfoque de entrega conocido como 'Windows como Servicio'?", a: ["Vender Windows por suscripción mensual", "Ofrecer mejoras continuas por Windows Update en lugar de versiones mayores cada muchos años", "Obligar a usar Office 365", "Eliminar las actualizaciones de seguridad"], c: 1 },
+        { q: "A partir de 2023, ¿cuál es la cadencia planeada para actualizaciones importantes de versión?", a: ["Cada 6 meses", "Cada año", "Una vez cada tres años", "Cada cinco años"], c: 2 },
+        { q: "¿Qué característica de la barra de tareas de Windows 11 es inamovible y no personalizable?", a: ["El reloj", "La sección de archivos recomendados en el Menú Inicio", "El botón de búsqueda", "El icono de Widgets"], c: 1 },
+        { q: "¿Qué diferencia principal hay entre una cuenta de Microsoft y una cuenta local?", a: ["La cuenta local requiere internet", "La cuenta de Microsoft permite sincronizar configuración y apps entre dispositivos mediante la nube", "No hay ninguna diferencia", "La cuenta local no permite instalar programas"], c: 1 },
+        { q: "¿Qué navegador basado en Chromium es el predeterminado en Windows 11?", a: ["Internet Explorer 11", "Microsoft Edge", "Google Chrome", "Mozilla Firefox"], c: 1 },
+        { q: "¿Qué es Windows Hello?", a: ["Un asistente de voz", "Un sistema de autenticación biométrica (rostro, huella o iris)", "Un programa de bienvenida", "Un chat de soporte"], c: 1 },
+        { q: "¿Qué función cumple el 'Arranque Seguro' (Secure Boot) en equipos con UEFI?", a: ["Acelerar el encendido", "Garantizar que los archivos de inicio sean de confianza y estén firmados", "Limpiar archivos temporales", "Entrar directamente al escritorio sin contraseña"], c: 1 },
+        { q: "¿Cómo se llama la plataforma de virtualización integrada en Windows 10/11 Profesional?", a: ["VMware Player", "VirtualBox", "Client Hyper-V", "Windows Virtual PC"], c: 2 },
+        { q: "¿Qué sucede al activar el 'Modo Tablet' en dispositivos compatibles?", a: ["Se apaga el teclado", "El menú Inicio se maximiza a pantalla completa y las apps se ejecutan maximizadas", "Se borran los archivos del escritorio", "Se reduce el consumo de batería al 50%"], c: 1 },
+        { q: "¿Cuál es el comando rápido para abrir la 'Vista de tareas'?", a: ["Alt + F4", "Win + Tab", "Ctrl + Shift + Esc", "Win + L"], c: 1 },
+        { q: "¿A qué herramienta administrativa se accede ejecutando 'services.msc'?", a: ["Administrador de discos", "Servicios del sistema", "Visor de eventos", "Editor del registro"], c: 1 },
+        { q: "En el Administrador de Tareas, ¿qué indica un pico constante en el gráfico del procesador?", a: ["Que el ordenador está apagado", "Un posible error de programa o infección por malware", "Que falta memoria RAM", "Que el disco duro está lleno"], c: 1 },
+        { q: "¿Para qué sirve la herramienta 'Diagnóstico de memoria de Windows'?", a: ["Para aumentar la capacidad de la RAM", "Para verificar errores físicos o de funcionamiento en los módulos de RAM", "Para borrar archivos temporales", "Para ver cuántos GB tiene el equipo"], c: 1 },
+        { q: "El 'Modo Dios' (God Mode) en Windows permite:", a: ["Jugar con trucos", "Acceder a todos los ajustes del panel de control desde una sola carpeta", "Hackear redes Wi-Fi", "Ser invisible en internet"], c: 1 },
+        { q: "¿Qué herramienta se usa para auditar intentos de inicio de sesión fallidos?", a: ["Microsoft Store", "Visor de Eventos (registros de Seguridad)", "Paint", "Explorador de archivos"], c: 1 },
+        { q: "¿Qué significa BYOD en el contexto profesional de sistemas?", a: ["Build Your Own Desktop", "Bring Your Own Device (Trae tu propio dispositivo)", "Buy Your Own Disk", "Backup Your Own Data"], c: 1 },
+        { q: "¿Cuál es la función del 'TrustedBoot'?", a: ["Proteger la integridad del núcleo y controladores críticos durante el arranque", "Hacer que Windows cargue en 2 segundos", "Evitar que se instale Linux", "Cifrar el disco duro completo"], c: 0 },
+        { q: "¿Qué componente del SO permite gestionar políticas de grupo locales?", a: ["gpedit.msc", "notepad.exe", "calc.exe", "cmd.exe"], c: 0 },
+        { q: "¿Qué ocurre si el sistema hace un uso exhaustivo de la 'memoria virtual'?", a: ["El ordenador va mucho más rápido", "El rendimiento cae bruscamente debido al intercambio constante con el disco", "Se ahorra electricidad", "Se apaga el monitor"], c: 1 },
+        { q: "¿Qué son los 'Martes de parches' (Patch Tuesday)?", a: ["Días en que Windows es gratis", "Actualizaciones de calidad y seguridad enviadas mensualmente", "Días en que no funciona internet", "Actualizaciones exclusivas de juegos"], c: 1 }
+    ];
+
+    let current = 0, score = 0, canClick = true;
+
+    function loadNext() {
+        if (current < data.length - 1 && document.getElementById('next').style.display === 'block') {
+            current++;
+            render();
+        } else if (current === data.length - 1) {
+            showFinal();
+        }
+    }
+
+    function render() {
+        canClick = true;
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+        document.getElementById('feedback').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        const feed = document.getElementById('feedback');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            feed.innerText = "¡Correcto!";
+            feed.style.background = "#dcfce7";
+            feed.style.color = "#166534";
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+            feed.innerText = "Incorrecto. La respuesta correcta está resaltada.";
+            feed.style.background = "#fee2e2";
+            feed.style.color = "#991b1b";
+        }
+        
+        feed.style.display = 'block';
+        document.getElementById('next').style.display = 'block';
+        if(current === data.length - 1) document.getElementById('next').innerText = "Ver Resultados";
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('msg');
+        if(score >= 18) m.innerText = "Excelente. Tienes un conocimiento avanzado de Windows 11.";
+        else if(score >= 13) m.innerText = "Buen trabajo. Conoces bien las herramientas administrativas.";
+        else m.innerText = "Repasa el documento de la Unidad 3 para afianzar conceptos.";
+    }
+
+    render();
+</script>
+</body>
+</html>
