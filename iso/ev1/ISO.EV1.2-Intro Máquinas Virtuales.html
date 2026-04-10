@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz: Introducción a las Máquinas Virtuales</title>
+    <style>
+        :root { --p: #0891b2; --s: #64748b; --bg: #f1f5f9; --txt: #0f172a; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 700px; width: 100%; padding: 2rem; border-radius: 1rem; shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 6px; background: #e2e8f0; border-radius: 3px; margin: 1rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.3s; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.5rem 0; border: 1px solid #cbd5e1; border-radius: 0.5rem; text-align: left; cursor: pointer; background: none; }
+        .opt:hover { background: #f8fafc; border-color: var(--p); }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; }
+        #next { background: var(--p); color: white; border: none; padding: 0.8rem 2rem; border-radius: 0.5rem; cursor: pointer; float: right; display: none; }
+        #results { display: none; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <h2 style="color:var(--p)">Quiz Virtualización</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <p id="counter" style="font-size: 0.9rem; color: var(--s)"></p>
+        <h3 id="question"></h3>
+        <div id="options"></div>
+        <div id="feedback" style="margin-top:1rem; font-weight:bold"></div>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+    <div id="results">
+        <h2>Resultados</h2>
+        <h1 id="score-val" style="font-size: 3.5rem; color: var(--p)"></h1>
+        <button onclick="location.reload()" style="padding: 1rem 2rem; border-radius: 0.5rem; cursor: pointer">Reintentar</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { q: "¿Qué componente gestiona la asignación de recursos entre las VM y el hardware físico?", a: ["BIOS", "Hipervisor", "Shell", "Kernel del Invitado"], c: 1 },
+        { q: "El sistema operativo principal donde instalamos el software de virtualización se llama:", a: ["Invitado", "Contenedor", "Anfitrión", "Esclavo"], c: 2 },
+        { q: "La máquina virtual de Java es un ejemplo de:", a: ["VM de Sistema", "VM de Proceso", "Contenedor", "Emulador de consola"], c: 1 },
+        { q: "Diferencia entre emulación y simulación según el texto:", a: ["No hay diferencia", "La simulación es más rápida", "Emular imita procesos internos; simular finge áreas para obtener respuestas", "Simular es para hardware y emular para software"], c: 2 },
+        { q: "¿Qué técnica de virtualización hace que el SO invitado envíe llamadas al hipervisor porque sabe que es virtual?", a: ["Nativa", "Emulación", "Paravirtualización", "Contenedores"], c: 2 },
+        { q: "¿Qué tecnología NO requiere un hipervisor y comparte el kernel del anfitrión?", a: ["VMware", "Contenedores (Docker)", "VirtualBox", "Hyper-V"], c: 1 },
+        { q: "Un servidor sin virtualizar suele dejar sin usar aproximadamente un:", a: ["10% de su capacidad", "70% de su capacidad", "25% de su capacidad", "5% de su capacidad"], c: 1 },
+        { q: "¿Qué permite la 'migración en caliente'?", a: ["Reiniciar rápido", "Mover una VM entre servidores físicos sin pérdida de servicio", "Cambiar de Windows a Linux", "Aumentar la RAM sin apagar"], c: 1 },
+        { q: "¿Cuál de estos es un software de virtualización nativo de Microsoft?", a: ["VirtualBox", "vSphere", "Hyper-V", "Docker"], c: 2 },
+        { q: "Cloud Computing: ¿Qué significa SaaS?", a: ["Infraestructura como servicio", "Plataforma como servicio", "Software como servicio", "Sistema como servicio"], c: 2 },
+        { q: "En el modelo IaaS (Infrastructure as a Service), el proveedor proporciona:", a: ["Solo el software", "El hardware/servidores", "Una base de datos lista", "El soporte técnico"], c: 1 },
+        { q: "¿Qué es el MBR en el contexto de arranque?", a: ["Memoria RAM", "Sector de arranque con tabla de particiones", "Un tipo de procesador", "Software de red"], c: 1 },
+        { q: "Las extensiones de virtualización por hardware de Intel se llaman:", a: ["AMD-V", "VT-x", "Hyper-Thread", "DirectX"], c: 1 },
+        { q: "¿Qué ventaja describe la capacidad de que un fallo en una VM no afecte a las demás?", a: ["Escalabilidad", "Resiliencia/Aislamiento", "Abstracción", "Multitarea"], c: 1 },
+        { q: "VirtualBox puede instalarse en:", a: ["Solo Windows", "Solo Linux", "Windows, Linux, Mac OS X y Solaris", "Solo servidores Oracle"], c: 2 },
+        { q: "Docker utiliza contenedores similares a:", a: ["VirtualBox", "LXC (Linux Containers)", "VMware Fusion", "Java"], c: 1 },
+        { q: "Un beneficio clave del Cloud Computing es la escalabilidad:", a: ["Manual y lenta", "Automática (contratar más recursos según se usen)", "Solo para grandes empresas", "No existe la escalabilidad en la nube"], c: 1 },
+        { q: "El modelo PaaS está orientado a que el usuario:", a: ["Compre servidores", "Despliegue sus propias aplicaciones usando las tecnologías del proveedor", "Solo use una aplicación terminada", "Instale el sistema operativo"], c: 1 },
+        { q: "¿Qué es una imagen ISO en virtualización?", a: ["Un virus", "Un archivo que actúa como un CD-ROM virtual", "Un tipo de disco duro", "Un lenguaje de programación"], c: 1 },
+        { q: "¿Cómo se llama el software de VMware para virtualizar servidores en centros de datos?", a: ["Workstation Player", "vSphere", "Fusion", "VirtualBox"], c: 1 }
+    ];
+
+    let current = 0, score = 0, canClick = true;
+
+    function loadQ() {
+        canClick = true;
+        const q = data[current];
+        document.getElementById('question').innerText = q.q;
+        document.getElementById('counter').innerText = `Pregunta ${current + 1} de ${data.length}`;
+        document.getElementById('bar').style.width = `${((current+1)/data.length)*100}%`;
+        const opts = document.getElementById('options');
+        opts.innerHTML = '';
+        q.a.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'opt';
+            btn.innerText = opt;
+            btn.onclick = () => check(i, btn);
+            opts.appendChild(btn);
+        });
+        document.getElementById('next').style.display = 'none';
+        document.getElementById('feedback').innerText = '';
+    }
+
+    function check(idx, btn) {
+        if(!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        if(idx === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        document.getElementById('next').style.display = 'block';
+    }
+
+    function loadNext() {
+        current++;
+        if(current < data.length) loadQ();
+        else {
+            document.getElementById('quiz-area').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        }
+    }
+
+    loadQ();
+</script>
+</body>
+</html>
