@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz: Active Directory en Windows Server</title>
+    <style>
+        :root { --p: #4f46e5; --s: #64748b; --bg: #f8fafc; --txt: #0f172a; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 850px; width: 100%; padding: 2.5rem; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .progress { height: 12px; background: #e2e8f0; border-radius: 6px; margin: 1.5rem 0; overflow: hidden; border: 1px solid #cbd5e1; }
+        #bar { height: 100%; background: linear-gradient(90deg, #4f46e5, #818cf8); width: 0%; transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .opt { display: block; width: 100%; padding: 1.1rem; margin: 0.8rem 0; border: 2px solid #f1f5f9; border-radius: 12px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: all 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f5f3ff; transform: translateX(5px); }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 10px; cursor: pointer; float: right; display: none; font-weight: 600; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3); }
+        #results { display: none; text-align: center; }
+        .top-meta { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 0.8rem; color: var(--s); text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="top-meta">
+            <span>Ev. 02 - Active Directory</span>
+            <span id="counter"></span>
+        </div>
+        <h2 style="margin: 0.5rem 0 1.5rem 0; color: var(--p);">Administración de Dominios y AD</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 id="question" style="min-height: 3.5rem;"></h3>
+        <div id="options"></div>
+        <button id="next" onclick="loadNext()">Siguiente Pregunta</button>
+    </div>
+
+    <div id="results">
+        <h2 style="color:var(--p)">Certificación de Quiz AD</h2>
+        <div style="font-size: 5rem; margin: 1rem 0; font-weight: 900; color: var(--p);" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.2rem; margin-bottom: 2rem; color: var(--s);"></p>
+        <button onclick="location.reload()" style="padding: 1.2rem 3rem; background: var(--p); color:white; border:none; border-radius:10px; cursor:pointer; font-weight: bold;">Reiniciar Evaluación</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { q: "¿Qué es un Dominio en una red Windows?", a: ["Un conjunto de ordenadores con la misma IP", "Una agrupación lógica de objetos (usuarios, equipos) que comparten una base de datos común", "Un sitio web de la empresa", "Un cable que une todos los PCs"], c: 1 },
+        { q: "¿Cómo se llama el servicio de directorio de Microsoft para gestionar identidades y recursos?", a: ["OpenLDAP", "Active Directory (AD)", "Windows Registry", "Workgroup"], c: 1 },
+        { q: "¿Cuál es la principal ventaja de AD respecto a un 'Grupo de Trabajo'?", a: ["Es más barato", "Permite la administración centralizada y el inicio de sesión único (SSO)", "No requiere servidor", "Es más fácil de configurar para 2 equipos"], c: 1 },
+        { q: "¿Qué es un 'Controlador de Dominio' (DC)?", a: ["Un usuario administrador", "El servidor que ejecuta los servicios de AD y almacena la base de datos", "Un router especial", "Un programa de control remoto"], c: 1 },
+        { q: "¿Qué es una 'Unidad Organizativa' (UO)?", a: ["Un grupo de seguridad", "Un contenedor dentro del dominio para organizar objetos y aplicar directivas (GPO)", "Una sucursal física de la empresa", "Un tipo de usuario"], c: 1 },
+        { q: "¿Qué protocolo estándar utiliza Active Directory para realizar consultas a la base de datos?", a: ["HTTP", "LDAP (Lightweight Directory Access Protocol)", "FTP", "SMTP"], c: 1 },
+        { q: "¿Qué es un 'Árbol' en la terminología de AD?", a: ["Un dibujo del servidor", "Un conjunto de dominios que comparten un espacio de nombres contiguo", "Una carpeta con archivos", "El cableado del rack"], c: 1 },
+        { q: "¿Qué representa un 'Bosque' en AD?", a: ["Una zona con muchos servidores", "El nivel más alto de organización que agrupa uno o más árboles", "Un grupo de usuarios invitados", "La papelera de reciclaje de AD"], c: 1 },
+        { q: "¿Qué herramienta se usa para promocionar un servidor a Controlador de Dominio en versiones modernas?", a: ["dcpromo.exe", "Administrador del servidor (Post-instalación de roles)", "Panel de Control", "Bloc de notas"], c: 1 },
+        { q: "¿Qué es el 'Nombre Distintivo' (DN) en LDAP?", a: ["El nombre completo del servidor", "La ruta única de un objeto (ej. CN=User,OU=Ventas,DC=Empresa,DC=local)", "La contraseña del usuario", "El nombre del dominio"], c: 1 },
+        { q: "¿Qué componente de AD es necesario para que los clientes encuentren a los DCs en la red?", a: ["Servidor DHCP", "Servidor DNS", "Servidor Web", "Cortafuegos"], c: 1 },
+        { q: "¿Qué es un 'Perfil Móvil'?", a: ["Un usuario que usa smartphone", "Un perfil de usuario almacenado en el servidor que se carga en cualquier PC del dominio", "Un perfil que se borra al cerrar sesión", "Un usuario administrador"], c: 1 },
+        { q: "¿Dónde se configura la ruta del perfil móvil de un usuario?", a: ["En el Panel de Control del cliente", "En la pestaña 'Perfil' de las propiedades del usuario en AD", "En el registro de Windows", "No se configura, es automático"], c: 1 },
+        { q: "¿Qué es un 'Perfil Obligatorio'?", a: ["Un perfil que el usuario debe crear", "Un perfil de solo lectura (los cambios no se guardan al cerrar sesión)", "Un perfil para el jefe", "Un perfil con contraseña obligatoria"], c: 1 },
+        { q: "¿Qué extensión debe tener el archivo de colmena de un perfil para que sea 'Obligatorio'?", a: [".dat", ".man", ".ini", ".exe"], c: 1 },
+        { q: "¿Qué diferencia a un Grupo de Seguridad de un Grupo de Distribución?", a: ["El de seguridad permite asignar permisos; el de distribución es solo para listas de correo", "No hay diferencia", "El de distribución es más seguro", "El de seguridad solo acepta usuarios"], c: 0 },
+        { q: "¿Qué es el 'Catálogo Global'?", a: ["Un folleto de Microsoft", "Un DC que guarda una copia parcial de todos los objetos del bosque para búsquedas rápidas", "La lista de precios de licencias", "El historial de internet"], c: 1 },
+        { q: "¿Qué sucede si el DNS del dominio falla?", a: ["Internet funciona más lento", "Los usuarios no pueden iniciar sesión en el dominio", "Solo falla el correo", "No pasa nada"], c: 1 },
+        { q: "En LDAP, ¿qué significa 'OU'?", a: ["Original User", "Organizational Unit", "Other Unit", "Owner User"], c: 1 },
+        { q: "¿Cuál es el nombre del archivo de la base de datos de Active Directory?", a: ["registry.pol", "ntds.dit", "ad.db", "config.sys"], c: 1 }
+    ];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `Ítem ${current + 1} / ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        document.getElementById('next').style.display = 'block';
+    }
+
+    function loadNext() {
+        current++;
+        if (current < data.length) render();
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score >= 18) m.innerText = "¡Excelente! Estás listo para administrar infraestructuras de dominio complejas.";
+        else if(score >= 14) m.innerText = "¡Muy bien! Conoces los fundamentos de Active Directory y LDAP.";
+        else m.innerText = "Te falta repasar conceptos clave como LDAP, tipos de perfiles y la jerarquía de AD (Árboles/Bosques).";
+    }
+
+    render();
+</script>
+</body>
+</html>
