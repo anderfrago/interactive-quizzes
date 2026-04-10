@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: Caracterización de Sistemas Operativos</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --background: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #quiz-container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { text-align: center; color: var(--primary); margin-bottom: 10px; }
+        .subtitle { text-align: center; color: var(--secondary); margin-bottom: 30px; }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progress {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-card { display: none; }
+        .question-card.active { display: block; }
+
+        .question-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .options-container {
+            display: grid;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .option-btn:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .option-btn.correct {
+            background-color: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .option-btn.wrong {
+            background-color: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+
+        #feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        button.nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button.nav-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        #results-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score-circle {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container">
+    <div id="quiz-ui">
+        <h1>Quiz: ISO Unidad 1</h1>
+        <p class="subtitle">Caracterización de los Sistemas Operativos</p>
+        
+        <div class="progress-bar">
+            <div id="progress"></div>
+        </div>
+
+        <div id="question-content">
+            </div>
+
+        <div id="feedback"></div>
+
+        <div class="controls">
+            <span id="question-counter">Pregunta 1 de 20</span>
+            <button id="next-btn" class="nav-btn" onclick="nextQuestion()" disabled>Siguiente</button>
+        </div>
+    </div>
+
+    <div id="results-screen">
+        <h1>¡Quiz Completado!</h1>
+        <div class="score-circle" id="final-score">0/20</div>
+        <p id="score-message"></p>
+        <button class="nav-btn" onclick="location.reload()">Reiniciar Quiz</button>
+    </div>
+</div>
+
+<script>
+    const quizData = [
+        { q: "¿Cómo se define el término 'informática' según el documento?", a: ["La contracción de los vocablos Información y Automática.", "El estudio exclusivo del hardware.", "La ciencia de reparar máquinas.", "Un lenguaje de programación."], c: 0 },
+        { q: "¿Cuáles son los tres elementos básicos de un sistema informático?", a: ["Monitor, teclado y ratón", "Hardware, Software y Componente Humano", "Internet, Electricidad y Usuarios", "Procesador, Memoria y Disco"], c: 1 },
+        { q: "Diferencia principal entre software de base y de aplicación:", a: ["El precio", "El de base permite que el hardware trabaje, el de aplicación hace tareas del usuario", "El orden de instalación", "No hay diferencia"], c: 1 },
+        { q: "¿Qué caracteriza a los Supercomputadores?", a: ["Uso doméstico", "Gran capacidad de cálculo para simulaciones científicas", "Pantallas gigantes", "Servidores monousuario"], c: 1 },
+        { q: "¿Cuál es el objetivo de 'Seguridad' en un SO?", a: ["Instalar antivirus", "Actuar contra manipulaciones que dañen la información o el sistema", "Evitar borrar archivos propios", "Ahorrar batería"], c: 1 },
+        { q: "¿Qué es la 'Abstracción' en un SO?", a: ["Ocultar detalles de bajo nivel del hardware al usuario", "Hacer el hardware invisible", "Eliminar el kernel", "Aprender código máquina"], c: 0 },
+        { q: "¿Diferencia entre programa y proceso?", a: ["Son lo mismo", "Programa es pasivo, proceso es el programa en ejecución", "Ubicación en el monitor", "El sistema operativo"], c: 1 },
+        { q: "¿Qué es la fragmentación interna?", a: ["Rotura del disco", "Espacio desperdiciado dentro de una partición asignada", "Cables sueltos", "Carpetas vacías"], c: 1 },
+        { q: "¿Función principal de un driver?", a: ["Aumentar velocidad", "Traducir órdenes del SO al lenguaje del hardware", "Eliminar virus", "Manual de usuario"], c: 1 },
+        { q: "¿Qué caracteriza a un sistema 'Multitarea'?", a: ["Varias labores simultáneas", "Varios monitores", "Una sola tarea a la vez", "Ahorro de energía"], c: 0 },
+        { q: "¿Qué es el MBR?", a: ["Memoria RAM", "Primer sector del disco con tabla de particiones y arranque", "Placa base", "Tipo de licencia"], c: 1 },
+        { q: "Característica del Software Libre:", a: ["Siempre gratis", "Libertad para usar, estudiar, modificar y redistribuir", "Código oculto", "Solo 30 días de prueba"], c: 1 },
+        { q: "En gestión de procesos, ¿qué es la 'Prioridad'?", a: ["Orden alfabético", "Valor para determinar el uso del procesador", "Tamaño en disco", "Fecha de instalación"], c: 1 },
+        { q: "¿Qué es el Shell?", a: ["El chip CPU", "Interfaz de comunicación entre usuario y SO", "Cable de video", "Navegador web"], c: 1 },
+        { q: "¿Qué es el Swapping?", a: ["Cambio de teclado", "Mover procesos entre RAM y Disco para liberar espacio", "Reinicio rápido", "Cambio de contraseña"], c: 1 },
+        { q: "Objetivo de un sistema de ficheros:", a: ["Menos electricidad", "Administrar info de forma eficiente y estructurada", "Bloquear instalaciones", "Limpiar el disco"], c: 1 },
+        { q: "¿Qué es el Multiproceso Simétrico?", a: ["Monitores iguales", "Procesos enviados indistintamente a cualquier CPU libre", "Maestro-Esclavo", "Monotarea"], c: 1 },
+        { q: "¿Qué es el Software de Dominio Público?", a: ["Propiedad del Estado", "Sin derechos de autor, uso libre sin restricciones", "Solo en bibliotecas", "Software Propietario"], c: 1 },
+        { q: "¿Qué contiene el Manual del Administrador?", a: ["Recetas", "Gestión avanzada, usuarios, seguridad y mantenimiento", "Precios", "Biografías"], c: 1 },
+        { q: "Nivel de Gestión del Procesador se encarga de:", a: ["Imprimir", "Gestionar interrupciones y tiempo de CPU", "Crear carpetas", "Verificar teclado"], c: 1 }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let answered = false;
+
+    function loadQuestion() {
+        answered = false;
+        const qData = quizData[currentQuestion];
+        const container = document.getElementById('question-content');
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        
+        feedback.style.display = 'none';
+        nextBtn.disabled = true;
+        
+        container.innerHTML = `
+            <div class="question-card active">
+                <div class="question-text">${qData.q}</div>
+                <div class="options-container">
+                    ${qData.a.map((opt, i) => `
+                        <button class="option-btn" onclick="checkAnswer(${i})">${opt}</button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        updateUI();
+    }
+
+    function checkAnswer(index) {
+        if(answered) return;
+        answered = true;
+        
+        const correct = quizData[currentQuestion].c;
+        const btns = document.querySelectorAll('.option-btn');
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+
+        if(index === correct) {
+            btns[index].classList.add('correct');
+            feedback.innerHTML = "¡Correcto!";
+            feedback.style.backgroundColor = "#dcfce7";
+            feedback.style.color = "#166534";
+            score++;
+        } else {
+            btns[index].classList.add('wrong');
+            btns[correct].classList.add('correct');
+            feedback.innerHTML = "Incorrecto. La respuesta correcta está marcada en verde.";
+            feedback.style.backgroundColor = "#fee2e2";
+            feedback.style.color = "#991b1b";
+        }
+
+        feedback.style.display = 'block';
+        nextBtn.disabled = false;
+        
+        if(currentQuestion === quizData.length - 1) {
+            nextBtn.innerHTML = "Ver Resultados";
+        }
+    }
+
+    function nextQuestion() {
+        if(currentQuestion < quizData.length - 1) {
+            currentQuestion++;
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function updateUI() {
+        const progress = ((currentQuestion + 1) / quizData.length) * 100;
+        document.getElementById('progress').style.width = `${progress}%`;
+        document.getElementById('question-counter').innerText = `Pregunta ${currentQuestion + 1} de ${quizData.length}`;
+    }
+
+    function showResults() {
+        document.getElementById('quiz-ui').style.display = 'none';
+        document.getElementById('results-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = `${score} / ${quizData.length}`;
+        
+        let msg = "";
+        if(score === 20) msg = "¡Perfecto! Dominas la materia.";
+        else if(score >= 15) msg = "¡Muy bien! Tienes bases sólidas.";
+        else if(score >= 10) msg = "Aprobado, pero te vendría bien repasar el documento.";
+        else msg = "Necesitas estudiar más el contenido de la unidad.";
+        
+        document.getElementById('score-message').innerText = msg;
+    }
+
+    // Iniciar
+    loadQuestion();
+</script>
+
+</body>
+</html>
