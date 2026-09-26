@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiz: JavaScript y el DOM</title>
+    <style>
+        :root { --p: #10b981; --s: #64748b; --bg: #f8fafc; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 4px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s ease; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.7rem 0; border: 2px solid #f1f5f9; border-radius: 10px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f0fdf4; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 8px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .tag { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: var(--s); }
+        * { box-sizing: border-box; }
+        #q-box { display: flow-root; }
+        .opt, #question { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .opt:disabled { cursor: default; opacity: 1; }
+        button:focus-visible { outline: 3px solid #0f172a; outline-offset: 3px; }
+        #feedback { line-height: 1.5; }
+        @media (max-width: 600px) { body { padding: 8px; } #q-box { padding: 1.2rem; } .header-info { flex-wrap: wrap; gap: 0.6rem; } }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="header-info">
+            <span class="tag">IAW - Evaluación 1 · Unidad 03</span>
+            <span id="counter" style="color: var(--s); font-size: 0.85rem;"></span>
+        </div>
+        <h2 style="margin: 0 0 1.5rem 0; color: #064e3b;">JavaScript y el DOM</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 tabindex="-1" id="question" style="line-height: 1.4;"></h3>
+        <div id="options"></div>
+        <p id="feedback" role="status" aria-live="polite"></p>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results" tabindex="-1">
+        <h2 style="color:var(--p)">Simulación Finalizada</h2>
+        <div style="font-size: 4.5rem; margin: 1.5rem 0; font-weight: 800; color: #065f46;" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.1rem; color: var(--s); margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2.5rem; background: var(--p); color:white; border:none; border-radius:8px; cursor:pointer; font-weight: bold;">Reintentar Test</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+    {
+        "q": "¿Qué representa el DOM de una página web?",
+        "a": [
+            "El archivo CSS sin interpretar",
+            "Un árbol de nodos que JavaScript puede consultar y modificar",
+            "Una copia de la base de datos del servidor",
+            "Solo el texto visible de la página"
+        ],
+        "c": 1
+    },
+    {
+        "q": "En un script clásico externo, ¿qué hace defer?",
+        "a": [
+            "Ejecuta el script antes de analizar el HTML",
+            "Espera obligatoriamente a que carguen todas las imágenes",
+            "Pospone la ejecución hasta que se haya analizado el HTML",
+            "Ejecuta el script únicamente al hacer clic"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué devuelve document.querySelector(\".offer\") si no existe ninguna coincidencia?",
+        "a": [
+            "null",
+            "Una NodeList vacía",
+            "false",
+            "Un elemento vacío"
+        ],
+        "c": 0
+    },
+    {
+        "q": "Guardamos una colección con querySelectorAll y después añadimos un elemento que coincide. ¿Qué ocurre con esa colección?",
+        "a": [
+            "Añade automáticamente el nuevo elemento",
+            "Se convierte en un array",
+            "Pierde todos los elementos anteriores",
+            "Conserva su selección inicial: es una NodeList estática"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué selecciona #categories > li?",
+        "a": [
+            "Todos los li del documento",
+            "Los li que son hijos directos de #categories",
+            "Solo los li de las sublistas",
+            "El último li de cada lista"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué significa el selector .offer.ondemand?",
+        "a": [
+            "Elementos ondemand dentro de una offer",
+            "Elementos que tengan cualquiera de las dos clases",
+            "Elementos que tengan ambas clases",
+            "Elementos offer que no tengan ondemand"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué selecciona a[href$=\".html\"]?",
+        "a": [
+            "Enlaces cuyo atributo href termina en .html",
+            "Enlaces cuyo texto visible termina en .html",
+            "Enlaces sin href",
+            "Enlaces cuyo href comienza por .html"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué propiedad permite ir al siguiente hermano elemento ignorando los nodos de texto intermedios?",
+        "a": [
+            "parentElement",
+            "children",
+            "nextSibling",
+            "nextElementSibling"
+        ],
+        "c": 3
+    },
+    {
+        "q": "Un botón está dentro de una tarjeta .offer. ¿Qué permite boton.closest(\".offer\")?",
+        "a": [
+            "Seleccionar todas las ofertas del documento",
+            "Localizar la oferta antecesora más cercana al botón",
+            "Obtener siempre la primera oferta de la página",
+            "Crear una nueva oferta"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué ocurre con elemento.textContent = \"\u003cstrong>Hola\u003c/strong>\"?",
+        "a": [
+            "Se crea un elemento strong",
+            "Se ejecuta la cadena como JavaScript",
+            "Se sustituye el contenido por el texto literal \u003cstrong>Hola\u003c/strong>",
+            "Se añade el texto sin sustituir el contenido anterior"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Cómo se añade highlighted sin reemplazar las demás clases?",
+        "a": [
+            "oferta.classList.add(\"highlighted\")",
+            "oferta.classList.add(\".highlighted\")",
+            "oferta.className = \"highlighted\"",
+            "oferta.style = \"highlighted\""
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Cuál es la diferencia entre elemento.hidden = true y elemento.remove()?",
+        "a": [
+            "Ambos borran definitivamente la variable",
+            "hidden elimina el nodo y remove lo oculta",
+            "Ambos mantienen el elemento conectado al documento",
+            "hidden lo oculta conservándolo en el DOM; remove lo desconecta"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Cómo se lee el valor actual escrito en un input llamado campo?",
+        "a": [
+            "campo.textContent",
+            "campo.value",
+            "campo.innerHTML",
+            "campo.getAttribute(\"placeholder\")"
+        ],
+        "c": 1
+    },
+    {
+        "q": "Tras const detalle = document.createElement(\"p\"), ¿cómo se inserta como último hijo de oferta?",
+        "a": [
+            "oferta.before(detalle)",
+            "oferta.after(detalle)",
+            "oferta.appendChild(detalle)",
+            "detalle.appendChild(oferta)"
+        ],
+        "c": 2
+    },
+    {
+        "q": "Se añade el mismo nodo primero a ofertaA y después a ofertaB con appendChild. ¿Qué sucede?",
+        "a": [
+            "El nodo se mueve a ofertaB",
+            "Aparece una copia en cada oferta",
+            "El nodo se queda únicamente en ofertaA",
+            "Se clona automáticamente toda la ofertaA"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué instrucción registra mostrarDetalle para ejecutarse cuando ocurra un clic?",
+        "a": [
+            "boton.addEventListener(\"click\", mostrarDetalle())",
+            "boton.addEventListener(mostrarDetalle, \"click\")",
+            "boton.click = mostrarDetalle()",
+            "boton.addEventListener(\"click\", mostrarDetalle)"
+        ],
+        "c": 3
+    },
+    {
+        "q": "Se pulsa un span dentro de un botón que tiene el escuchador. Dentro de ese escuchador, ¿qué es evento.currentTarget?",
+        "a": [
+            "El span pulsado",
+            "El botón que tiene el escuchador",
+            "Siempre document",
+            "La tarjeta que contiene el botón"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué permite evento.preventDefault() en el clic cancelable de un enlace?",
+        "a": [
+            "Eliminar el enlace",
+            "Detener siempre la propagación",
+            "Evitar la navegación predeterminada del enlace",
+            "Ocultar automáticamente la sección enlazada"
+        ],
+        "c": 2
+    },
+    {
+        "q": "Una oferta tiene data-salary=\"399.99\". ¿Qué devuelve oferta.dataset.salary?",
+        "a": [
+            "La cadena \"399.99\"",
+            "El número 399.99",
+            "El nombre \"data-salary\"",
+            "Una función que calcula el salario"
+        ],
+        "c": 0
+    },
+    {
+        "q": "Para resaltar solo las ofertas del filtro actual, ¿qué hace oferta.classList.toggle(\"highlighted\", coincide)?",
+        "a": [
+            "Invierte siempre la clase, sin mirar coincide",
+            "Elimina la oferta cuando coincide es false",
+            "Añade la clase sin retirar resaltados anteriores",
+            "Añade la clase si coincide es true y la quita si es false"
+        ],
+        "c": 3
+    }
+];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        document.getElementById('feedback').textContent = '';
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        all.forEach(option => { option.disabled = true; });
+        document.getElementById('feedback').textContent = i === correct
+            ? '¡Correcto!'
+            : 'Respuesta incorrecta. La respuesta correcta es: ' + data[current].a[correct];
+        document.getElementById('next').style.display = 'block';
+        document.getElementById('next').focus();
+        if(current === data.length - 1) document.getElementById('next').innerText = "Ver Mi Nota";
+    }
+
+    function loadNext() {
+        if (canClick || current >= data.length) return;
+        current++;
+        if (current < data.length) { render(); document.getElementById('question').focus(); }
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('results').focus();
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score >= 18) m.innerText = "¡Excelente! Dominas los contenidos de esta unidad.";
+        else if(score >= 14) m.innerText = "¡Buen trabajo! Tienes una buena base; repasa las preguntas que has fallado.";
+        else m.innerText = "Repasa los selectores, la manipulación de nodos y los eventos.";
+    }
+
+    render();
+</script>
+</body>
+</html>
