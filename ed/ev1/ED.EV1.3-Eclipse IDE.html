@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiz: Eclipse IDE</title>
+    <style>
+        :root { --p: #10b981; --s: #64748b; --bg: #f8fafc; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 4px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s ease; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.7rem 0; border: 2px solid #f1f5f9; border-radius: 10px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f0fdf4; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 8px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .tag { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: var(--s); }
+        * { box-sizing: border-box; }
+        #q-box { display: flow-root; }
+        .opt, #question { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .opt:disabled { cursor: default; opacity: 1; }
+        button:focus-visible { outline: 3px solid #0f172a; outline-offset: 3px; }
+        #feedback { line-height: 1.5; }
+        @media (max-width: 600px) { body { padding: 8px; } #q-box { padding: 1.2rem; } .header-info { flex-wrap: wrap; gap: 0.6rem; } }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="header-info">
+            <span class="tag">ED - Evaluación 1 · Unidad 03</span>
+            <span id="counter" style="color: var(--s); font-size: 0.85rem;"></span>
+        </div>
+        <h2 style="margin: 0 0 1.5rem 0; color: #064e3b;">Eclipse IDE</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 tabindex="-1" id="question" style="line-height: 1.4;"></h3>
+        <div id="options"></div>
+        <p id="feedback" role="status" aria-live="polite"></p>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results" tabindex="-1">
+        <h2 style="color:var(--p)">Simulación Finalizada</h2>
+        <div style="font-size: 4.5rem; margin: 1.5rem 0; font-weight: 800; color: #065f46;" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.1rem; color: var(--s); margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2.5rem; background: var(--p); color:white; border:none; border-radius:8px; cursor:pointer; font-weight: bold;">Reintentar Test</button>
+    </div>
+</div>
+
+<script>
+    // Basado en ED.EV1.UD03 - 01 Eclipse IDE.pdf, material de clase.
+    const data = [
+    {
+        "q": "¿Qué paquete se recomienda para desarrollar aplicaciones Java en Eclipse en la unidad?",
+        "a": [
+            "JDK",
+            "Solo un editor de texto",
+            "Un navegador web",
+            "Un visor de archivos JAR"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Para qué sirve la opción -vm de eclipse.ini?",
+        "a": [
+            "Elegir el nombre del proyecto Java",
+            "Especificar la JVM con la que se inicia Eclipse",
+            "Activar un punto de interrupción",
+            "Cambiar el paquete de todas las clases"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué puede contener un workspace de Eclipse?",
+        "a": [
+            "Únicamente archivos ejecutables",
+            "Solo la instalación de la JVM",
+            "Exclusivamente una clase Java",
+            "Proyectos, recursos, preferencias y metadatos"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué acción permite trabajar con otro espacio de trabajo?",
+        "a": [
+            "File → Switch Workspace",
+            "Run → Java Application",
+            "Source → Organize Imports",
+            "Debug → Resume"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué indica un asterisco en la pestaña de un editor?",
+        "a": [
+            "Que la clase tiene un método main",
+            "Que el proyecto está cerrado",
+            "Que hay cambios pendientes de guardar",
+            "Que el programa está ejecutándose"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué es una perspectiva en Eclipse?",
+        "a": [
+            "Un archivo de código objeto",
+            "Una organización de vistas, editores y acciones para una tarea",
+            "Una copia comprimida del workspace",
+            "Un tipo de excepción de Java"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué acción recupera la distribución predeterminada de una perspectiva?",
+        "a": [
+            "Reset Perspective",
+            "Close Project",
+            "Organize Imports",
+            "Export JAR"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué vista permite navegar por los paquetes y archivos de un proyecto?",
+        "a": [
+            "Variables",
+            "Console",
+            "Breakpoints",
+            "Package Explorer"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué muestra la vista Outline?",
+        "a": [
+            "El resultado de la última ejecución",
+            "Los proyectos de todos los workspaces",
+            "La estructura del archivo fuente seleccionado",
+            "Las excepciones de toda la aplicación"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué muestra la vista Problems?",
+        "a": [
+            "Solo el texto escrito por System.out.println",
+            "Errores y advertencias del proyecto",
+            "La lista de métodos de la clase actual",
+            "El historial de todas las ejecuciones"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué método ofrece el punto de entrada de la aplicación de consola de los ejemplos?",
+        "a": [
+            "public static void main(String[] args)",
+            "public void start(String name)",
+            "private int main()",
+            "public static String run()"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué acción ejecuta la clase como aplicación Java?",
+        "a": [
+            "Import → Existing Projects",
+            "Source → Organize Imports",
+            "Window → Reset Perspective",
+            "Run As → Java Application"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Dónde se muestra la salida del programa ejecutado en Eclipse?",
+        "a": [
+            "En la vista Console",
+            "En la vista Outline",
+            "En el archivo eclipse.ini",
+            "En la lista de perspectivas"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué acción ayuda a añadir las importaciones necesarias de una clase accesible?",
+        "a": [
+            "File → Switch Workspace",
+            "Run → Resume",
+            "Source → Organize Imports",
+            "Window → Reset Perspective"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué hay que identificar al exportar el JAR ejecutable del ejemplo?",
+        "a": [
+            "El nombre de la perspectiva activa",
+            "La clase principal con el punto de entrada",
+            "El número de breakpoints",
+            "El tema visual de Eclipse"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué comando ejecuta el JAR preparado como ejecutable en la práctica?",
+        "a": [
+            "javac -jar miprograma.jar",
+            "java -jar miprograma.jar",
+            "java miprograma.java.class",
+            "jar -run miprograma.java"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué opción permite incorporar un proyecto existente al workspace?",
+        "a": [
+            "Import → Existing Projects into Workspace",
+            "New → Class",
+            "Run As → Java Application",
+            "Source → Organize Imports"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué sucede al cerrar un proyecto con Close Project?",
+        "a": [
+            "Se eliminan sus archivos del disco",
+            "Se exporta automáticamente a ZIP",
+            "Se convierte en un archivo JAR",
+            "Eclipse deja de trabajar con él hasta que se reabre, sin borrarlo"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué hace Link with Editor en el explorador de paquetes?",
+        "a": [
+            "Enlaza las bibliotecas para crear un ejecutable",
+            "Selecciona el recurso correspondiente al editor activo",
+            "Importa otro workspace",
+            "Guarda automáticamente cualquier archivo"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué diferencia hay entre Java Search y File Search según la unidad?",
+        "a": [
+            "Java Search solo busca archivos ZIP",
+            "Java Search busca elementos Java; File Search busca texto en archivos",
+            "File Search ejecuta las clases encontradas",
+            "Ambas opciones solo cambian la apariencia del IDE"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Para qué sirve un breakpoint de línea?",
+        "a": [
+            "Suspender la ejecución al alcanzar esa línea durante la depuración",
+            "Borrar la línea antes de compilar",
+            "Crear una nueva clase",
+            "Exportar el estado del proyecto a ZIP"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué acción inicia la ejecución en modo depuración?",
+        "a": [
+            "Run As → Java Application sin depuración",
+            "Source → Organize Imports",
+            "Debug As → Java Application",
+            "File → Export"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué acción corresponde a F5 (Step Into) en los atajos del material?",
+        "a": [
+            "Continuar hasta el siguiente punto de parada",
+            "Salir del método actual",
+            "Avanzar entrando en el método llamado",
+            "Ejecutar la llamada sin entrar en ella"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué acción corresponde a F6 (Step Over)?",
+        "a": [
+            "Entrar en el método llamado",
+            "Cerrar el proyecto actual",
+            "Ejecutar la llamada sin entrar paso a paso en el método",
+            "Finalizar el programa inmediatamente"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué acción corresponde a F7 (Step Return)?",
+        "a": [
+            "Entrar en el siguiente método",
+            "Reiniciar la aplicación",
+            "Completar el método actual y volver al código que lo llamó",
+            "Desactivar todos los breakpoints"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué hace F8 (Resume) cuando el programa está suspendido?",
+        "a": [
+            "Ejecuta solo la siguiente línea y siempre vuelve a detenerse",
+            "Borra todos los puntos de interrupción",
+            "Recompila el proyecto sin ejecutarlo",
+            "Reanuda la ejecución hasta otro punto de parada o hasta finalizar"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué permite la vista Variables durante la depuración?",
+        "a": [
+            "Cambiar automáticamente todos los requisitos",
+            "Examinar y modificar valores en el contexto suspendido",
+            "Exportar el proyecto a JAR",
+            "Reescribir permanentemente el código al cambiar un valor"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué permite un breakpoint condicional?",
+        "a": [
+            "Detenerse únicamente al iniciar Eclipse",
+            "Evitar que se compile el método",
+            "Convertir una excepción en una advertencia",
+            "Detenerse cuando su expresión se evalúa a true"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Para qué sirve un watchpoint?",
+        "a": [
+            "Detenerse únicamente al cerrar una vista",
+            "Vigilar el espacio libre del disco",
+            "Guardar cada cambio realizado en el editor",
+            "Detenerse al leer o modificar un campo, según su configuración"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué permite un Java Exception Breakpoint?",
+        "a": [
+            "Suspender la ejecución al producirse la excepción configurada",
+            "Corregir automáticamente todas las excepciones",
+            "Eliminar los bloques try-catch",
+            "Transformar excepciones en código fuente"
+        ],
+        "c": 0
+    }
+];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        document.getElementById('feedback').textContent = '';
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        all.forEach(option => { option.disabled = true; });
+        document.getElementById('feedback').textContent = i === correct
+            ? '¡Correcto!'
+            : 'Respuesta incorrecta. La respuesta correcta es: ' + data[current].a[correct];
+        document.getElementById('next').style.display = 'block';
+        document.getElementById('next').focus();
+        if(current === data.length - 1) document.getElementById('next').innerText = "Ver Mi Nota";
+    }
+
+    function loadNext() {
+        if (canClick || current >= data.length) return;
+        current++;
+        if (current < data.length) { render(); document.getElementById('question').focus(); }
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('results').focus();
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score / data.length >= 0.9) m.innerText = "¡Excelente! Dominas los contenidos de esta unidad.";
+        else if(score / data.length >= 0.7) m.innerText = "¡Buen trabajo! Tienes una buena base; repasa las preguntas que has fallado.";
+        else m.innerText = "Repasa el workspace, las vistas, la ejecución, la importación y la depuración en Eclipse.";
+    }
+
+    render();
+</script>
+</body>
+</html>

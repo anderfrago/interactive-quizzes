@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiz: Metodologías Ágiles</title>
+    <style>
+        :root { --p: #10b981; --s: #64748b; --bg: #f8fafc; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 4px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s ease; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.7rem 0; border: 2px solid #f1f5f9; border-radius: 10px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f0fdf4; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 8px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .tag { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: var(--s); }
+        * { box-sizing: border-box; }
+        #q-box { display: flow-root; }
+        .opt, #question { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .opt:disabled { cursor: default; opacity: 1; }
+        button:focus-visible { outline: 3px solid #0f172a; outline-offset: 3px; }
+        #feedback { line-height: 1.5; }
+        @media (max-width: 600px) { body { padding: 8px; } #q-box { padding: 1.2rem; } .header-info { flex-wrap: wrap; gap: 0.6rem; } }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="header-info">
+            <span class="tag">ED - Evaluación 1 · Unidad 04</span>
+            <span id="counter" style="color: var(--s); font-size: 0.85rem;"></span>
+        </div>
+        <h2 style="margin: 0 0 1.5rem 0; color: #064e3b;">Metodologías Ágiles</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 tabindex="-1" id="question" style="line-height: 1.4;"></h3>
+        <div id="options"></div>
+        <p id="feedback" role="status" aria-live="polite"></p>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results" tabindex="-1">
+        <h2 style="color:var(--p)">Simulación Finalizada</h2>
+        <div style="font-size: 4.5rem; margin: 1.5rem 0; font-weight: 800; color: #065f46;" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.1rem; color: var(--s); margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2.5rem; background: var(--p); color:white; border:none; border-radius:8px; cursor:pointer; font-weight: bold;">Reintentar Test</button>
+    </div>
+</div>
+
+<script>
+    // Basado en ED.EV1.UD04 - Metodologías Ágiles.pdf, material de clase.
+    const data = [
+    {
+        "q": "¿Qué busca Lean aplicado al desarrollo de software?",
+        "a": [
+            "Crear valor reduciendo desperdicios y mejorando el flujo de trabajo",
+            "Mantener a todas las personas ocupadas aunque nada se termine",
+            "Eliminar cualquier documentación",
+            "Producir el mayor número posible de funcionalidades sin validar su necesidad"
+        ],
+        "c": 0
+    },
+    {
+        "q": "Una corrección tarda una hora en programarse y cuatro días en revisarse. ¿Qué mejora conviene explorar?",
+        "a": [
+            "Exigir únicamente que se programe más deprisa",
+            "Reducir la espera mediante revisiones más pequeñas y frecuentes",
+            "Iniciar más correcciones mientras crece la cola",
+            "Eliminar todas las revisiones de calidad"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué distingue a la agilidad de una herramienta como un tablero digital?",
+        "a": [
+            "La agilidad expresa valores y principios; el tablero es un apoyo para trabajar",
+            "Un tablero convierte automáticamente cualquier proceso en ágil",
+            "La agilidad consiste exclusivamente en usar una aplicación",
+            "Ambos términos describen un compilador"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué interpretación de los valores ágiles es correcta?",
+        "a": [
+            "Toda documentación debe eliminarse",
+            "Los contratos dejan de tener validez",
+            "No hace falta un objetivo si se cambia con frecuencia",
+            "Los planes y la documentación tienen valor, aunque se priorizan la adaptación y el software útil"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué caracteriza a un enfoque adaptativo?",
+        "a": [
+            "Evitar cualquier diseño previo",
+            "Fijar todos los requisitos de forma inmutable",
+            "Revisar el plan a partir de resultados y aprendizaje frecuente",
+            "Aplazar las pruebas hasta terminar el producto"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué ejemplo distingue una iteración de un incremento en una agenda?",
+        "a": [
+            "Mejorar la búsqueda existente es iterar; añadir una capacidad utilizable amplía el producto",
+            "Crear solo tablas sin funcionalidad completa siempre es un incremento útil",
+            "Iterar consiste en eliminar los requisitos",
+            "Un incremento solo puede publicarse al terminar todo el proyecto"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué práctica corresponde a la integración continua descrita?",
+        "a": [
+            "Esperar al final del proyecto para integrar el código",
+            "Publicar obligatoriamente cada cambio en producción",
+            "Verificar con frecuencia los cambios compartidos",
+            "Sustituir todas las pruebas por una reunión"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué son transparencia, inspección y adaptación en Scrum?",
+        "a": [
+            "Los tres artefactos del producto",
+            "Las responsabilidades del Scrum Team",
+            "Las fases obligatorias de compilación",
+            "Los fundamentos que permiten comprender el trabajo y ajustar decisiones"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Cómo se caracteriza el Scrum Team en el material?",
+        "a": [
+            "Depende de que el Scrum Master asigne cada tarea",
+            "Está formado únicamente por quienes escriben código",
+            "Es autogestionado y reúne colectivamente las capacidades necesarias",
+            "Debe separar siempre las pruebas en un equipo externo"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿De qué es responsable el Product Owner?",
+        "a": [
+            "Asignar obligatoriamente cada tarea técnica",
+            "Dirigir los informes individuales de la Daily",
+            "Maximizar el valor y asegurar una gestión eficaz del Product Backlog",
+            "Programar personalmente todas las funcionalidades"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué responsabilidad corresponde a los Developers?",
+        "a": [
+            "Cancelar el Sprint cuando lo prefieran",
+            "Sustituir al cliente en todas las decisiones de valor",
+            "Dejar la calidad exclusivamente al Product Owner",
+            "Crear el incremento, planificar y adaptar su trabajo y cumplir la Definition of Done"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué hace el Scrum Master?",
+        "a": [
+            "Reparte obligatoriamente todas las tareas",
+            "Ayuda a aplicar Scrum, mejorar la eficacia y eliminar impedimentos",
+            "Es la única persona que puede programar",
+            "Aprueba cada línea de código antes de que se escriba"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué duración tiene un Sprint según el material?",
+        "a": [
+            "Duración fija de un mes o menos",
+            "Siempre exactamente dos semanas",
+            "Duración variable hasta completar todas las tareas",
+            "Un mínimo obligatorio de un mes"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué asociación de artefacto y compromiso es correcta?",
+        "a": [
+            "Product Backlog — Product Goal",
+            "Product Backlog — Definition of Done",
+            "Incremento — Sprint Goal",
+            "Sprint Backlog — Product Goal"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué incluye el Sprint Backlog?",
+        "a": [
+            "Solo una lista de horas trabajadas",
+            "Todas las necesidades futuras del producto sin selección",
+            "Únicamente el incremento del Sprint anterior",
+            "Sprint Goal, elementos seleccionados y plan para entregarlos"
+        ],
+        "c": 3
+    },
+    {
+        "q": "Una funcionalidad cumple sus criterios de aceptación, pero no pasa las pruebas exigidas por la Definition of Done. ¿Cuál es su estado?",
+        "a": [
+            "Está terminada porque el comportamiento visible basta",
+            "Está terminada si se ha escrito todo el código",
+            "No forma parte del incremento terminado",
+            "Pasa a terminada automáticamente en la Review"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué se acuerda durante la Sprint Planning?",
+        "a": [
+            "Solo la evaluación individual de cada integrante",
+            "El contenido inmutable de todos los Sprints futuros",
+            "La eliminación de las pruebas para ahorrar tiempo",
+            "Por qué es valioso el Sprint, qué se puede hacer y cómo realizarlo"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Cuál es el propósito de la Daily Scrum?",
+        "a": [
+            "Presentar informes individuales al Scrum Master",
+            "Que los Developers inspeccionen el avance hacia el Sprint Goal y adapten el plan",
+            "Repartir los beneficios del producto",
+            "Autorizar la publicación de cada incremento"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué duración tiene la Daily Scrum?",
+        "a": [
+            "Una hora como mínimo",
+            "15 minutos cada día de trabajo del Sprint",
+            "La misma duración que la Planning",
+            "Hasta que todas las tareas estén terminadas"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué diferencia la Sprint Review de la Sprint Retrospective?",
+        "a": [
+            "La Review sustituye las pruebas; la retrospectiva asigna salarios",
+            "La Review inspecciona el resultado con interesados; la retrospectiva mejora la forma de trabajar",
+            "La Review solo admite Developers; la retrospectiva solo clientes",
+            "Ambas tienen como único objetivo mostrar una demostración"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Quién puede cancelar el Sprint si su objetivo queda obsoleto?",
+        "a": [
+            "Cualquier parte interesada por separado",
+            "El Scrum Master exclusivamente",
+            "El Product Owner",
+            "La persona con más tareas asignadas"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué cambio es compatible con un Sprint en curso?",
+        "a": [
+            "Eliminar la Definition of Done para terminar antes",
+            "Aclarar y renegociar el alcance sin poner en peligro el Sprint Goal ni rebajar la calidad",
+            "Cambiar el objetivo cada día sin consultar",
+            "Añadir todas las peticiones nuevas aunque impidan lograr el objetivo"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué afirmación sobre historias de usuario es correcta?",
+        "a": [
+            "Son el formato obligatorio de todos los elementos en Scrum",
+            "Sustituyen la Definition of Done",
+            "Son una técnica opcional para expresar necesidades desde la perspectiva del usuario",
+            "Deben describir únicamente tareas de base de datos"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué describe mejor el refinamiento del Product Backlog?",
+        "a": [
+            "Una actividad continua para aclarar y dividir el trabajo",
+            "Un evento formal adicional obligatorio",
+            "Una reunión destinada a eliminar los criterios de aceptación",
+            "La aprobación final del incremento por el Scrum Master"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué afirmación sobre Planning Poker y los puntos es correcta?",
+        "a": [
+            "Scrum obliga a utilizar Fibonacci",
+            "Los puntos sirven para clasificar personas de equipos distintos",
+            "Una estimación garantiza la fecha de entrega",
+            "Son técnicas opcionales; los puntos no deben convertirse automáticamente en horas"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué representa un burndown?",
+        "a": [
+            "El trabajo pendiente a lo largo del tiempo",
+            "El número de errores por programador",
+            "El valor económico garantizado del producto",
+            "Un artefacto oficial obligatorio de Scrum"
+        ],
+        "c": 0
+    },
+    {
+        "q": "La columna En revisión alcanza su límite WIP. ¿Qué respuesta encaja con un sistema pull?",
+        "a": [
+            "Añadir nuevas tareas en desarrollo sin revisar la capacidad",
+            "Ayudar a terminar revisiones y resolver bloqueos antes de iniciar más trabajo",
+            "Mover las tareas a otra columna para ocultar la acumulación",
+            "Elevar siempre el límite sin investigar las causas"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Cómo cuenta un elemento iniciado que queda bloqueado?",
+        "a": [
+            "Sigue contando como trabajo en curso",
+            "Deja de contar al moverlo a Bloqueados",
+            "Cuenta como terminado",
+            "Se elimina de las métricas automáticamente"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué combinación de métricas es correcta?",
+        "a": [
+            "Throughput: días de espera; tiempo de ciclo: número de personas",
+            "Throughput: terminados por unidad de tiempo; tiempo de ciclo: desde inicio hasta finalización",
+            "Throughput: tareas iniciadas; tiempo de ciclo: presupuesto",
+            "Throughput: tamaño del backlog; tiempo de ciclo: duración de la Daily"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué significa una SLE de cinco días con un 85 % de probabilidad desde el inicio del trabajo?",
+        "a": [
+            "Que todas las tareas deben durar exactamente cinco días",
+            "Que el equipo trabaja al 85 % de su capacidad",
+            "Que cada tarea tiene garantizada su entrega en cinco días",
+            "Una expectativa probabilística, no una garantía para cada elemento"
+        ],
+        "c": 3
+    }
+];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        document.getElementById('feedback').textContent = '';
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        all.forEach(option => { option.disabled = true; });
+        document.getElementById('feedback').textContent = i === correct
+            ? '¡Correcto!'
+            : 'Respuesta incorrecta. La respuesta correcta es: ' + data[current].a[correct];
+        document.getElementById('next').style.display = 'block';
+        document.getElementById('next').focus();
+        if(current === data.length - 1) document.getElementById('next').innerText = "Ver Mi Nota";
+    }
+
+    function loadNext() {
+        if (canClick || current >= data.length) return;
+        current++;
+        if (current < data.length) { render(); document.getElementById('question').focus(); }
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('results').focus();
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score / data.length >= 0.9) m.innerText = "¡Excelente! Dominas los contenidos de esta unidad.";
+        else if(score / data.length >= 0.7) m.innerText = "¡Buen trabajo! Tienes una buena base; repasa las preguntas que has fallado.";
+        else m.innerText = "Repasa Lean, los valores ágiles, Scrum y las políticas y métricas de Kanban.";
+    }
+
+    render();
+</script>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiz: Entornos de Desarrollo</title>
+    <style>
+        :root { --p: #10b981; --s: #64748b; --bg: #f8fafc; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 4px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s ease; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.7rem 0; border: 2px solid #f1f5f9; border-radius: 10px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f0fdf4; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 8px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .tag { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: var(--s); }
+        * { box-sizing: border-box; }
+        #q-box { display: flow-root; }
+        .opt, #question { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .opt:disabled { cursor: default; opacity: 1; }
+        button:focus-visible { outline: 3px solid #0f172a; outline-offset: 3px; }
+        #feedback { line-height: 1.5; }
+        @media (max-width: 600px) { body { padding: 8px; } #q-box { padding: 1.2rem; } .header-info { flex-wrap: wrap; gap: 0.6rem; } }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="header-info">
+            <span class="tag">ED - Evaluación 1 · Unidad 02</span>
+            <span id="counter" style="color: var(--s); font-size: 0.85rem;"></span>
+        </div>
+        <h2 style="margin: 0 0 1.5rem 0; color: #064e3b;">Entornos de Desarrollo</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 tabindex="-1" id="question" style="line-height: 1.4;"></h3>
+        <div id="options"></div>
+        <p id="feedback" role="status" aria-live="polite"></p>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results" tabindex="-1">
+        <h2 style="color:var(--p)">Simulación Finalizada</h2>
+        <div style="font-size: 4.5rem; margin: 1.5rem 0; font-weight: 800; color: #065f46;" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.1rem; color: var(--s); margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2.5rem; background: var(--p); color:white; border:none; border-radius:8px; cursor:pointer; font-weight: bold;">Reintentar Test</button>
+    </div>
+</div>
+
+<script>
+    // Basado en ED.EV1.UD02 - Entornos de Desarrollo.pdf, material de clase.
+    const data = [
+    {
+        "q": "¿Qué significa CASE?",
+        "a": [
+            "Ejecución de aplicaciones en una máquina virtual",
+            "Sistema de control exclusivo de errores de sintaxis",
+            "Compilación automática sin herramientas externas",
+            "Ingeniería de software asistida por ordenador"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Cuál es la finalidad general de los productos CASE?",
+        "a": [
+            "Sustituir todos los requisitos por código generado",
+            "Eliminar la intervención del equipo en todas las fases",
+            "Dar soporte informático al desarrollo organizado del software",
+            "Ejecutar únicamente aplicaciones terminadas"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué nivel funcional CASE realiza una operación atómica como compilar un programa?",
+        "a": [
+            "Herramienta",
+            "Servicio",
+            "Banco de trabajo",
+            "Entorno o factoría"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué nivel CASE reúne servicios para una tarea como editar código fuente?",
+        "a": [
+            "Herramienta",
+            "Servicio",
+            "Entorno o factoría",
+            "Banco de trabajo de todo un perfil"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué nivel CASE da soporte a las actividades de un rol profesional?",
+        "a": [
+            "Servicio",
+            "Banco de trabajo",
+            "Operación atómica",
+            "Archivo ejecutable"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué nivel CASE da soporte al proceso completo de desarrollo?",
+        "a": [
+            "Servicio de compilación",
+            "Entorno o factoría",
+            "Editor de código",
+            "Depurador"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Para qué se citan StarUML y ArgoUML en los apuntes?",
+        "a": [
+            "Como máquinas virtuales de Java",
+            "Como formatos de código ejecutable",
+            "Como herramientas de apoyo al análisis y diseño",
+            "Como intérpretes de comandos del sistema"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué significa IDE?",
+        "a": [
+            "Interfaz de Datos Ejecutables",
+            "Intérprete de Diseño Estructurado",
+            "Instalador de Dependencias Externas",
+            "Entorno de Desarrollo Integrado"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Cuál es la principal ventaja de integrar herramientas en un IDE?",
+        "a": [
+            "Garantizar que todos los algoritmos son correctos",
+            "Evitar que el programa necesite pruebas",
+            "Impedir la modificación del código fuente",
+            "Trabajar con componentes coordinados mediante una interfaz común"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué componente permite crear y modificar código fuente?",
+        "a": [
+            "Editor de código",
+            "Enlazador",
+            "Intérprete",
+            "Constructor de interfaces gráficas"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué componente traduce el código fuente a código objeto?",
+        "a": [
+            "Editor",
+            "Depurador",
+            "Control de versiones",
+            "Compilador"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué herramienta ayuda a seguir la ejecución y localizar errores?",
+        "a": [
+            "Depurador",
+            "Constructor de interfaces",
+            "Generador de documentación",
+            "Editor de imágenes"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué componente facilita diseñar visualmente una interfaz?",
+        "a": [
+            "Enlazador",
+            "Compilador",
+            "Control de versiones",
+            "Constructor de interfaz gráfica"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Cómo pueden algunos IDE ampliar el soporte a otros lenguajes?",
+        "a": [
+            "Mediante plugins adicionales",
+            "Cambiando la extensión de todos los archivos",
+            "Eliminando el compilador del sistema",
+            "Convirtiendo cualquier lenguaje a HTML"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué actividades constituyen el núcleo del soporte de un entorno de programación según la unidad?",
+        "a": [
+            "Venta y facturación",
+            "Diseño de hardware y fabricación",
+            "Codificación y pruebas",
+            "Instalación de redes y cableado"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué secuencia corresponde al uso de código intermedio?",
+        "a": [
+            "Edición de una imagen y enlace de documentos",
+            "Ejecución de requisitos y compilación del resultado",
+            "Compilación a código intermedio y posterior ejecución mediante un intérprete o máquina virtual",
+            "Enlace del código fuente sin traducción previa"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué diferencia al IDE de la cadena manual de herramientas descrita?",
+        "a": [
+            "La ausencia de editor de código",
+            "La obligación de ejecutar cada herramienta por separado",
+            "La integración y coordinación entre las herramientas",
+            "La eliminación del depurador"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué mejora aporta un editor orientado al lenguaje frente a uno de texto simple?",
+        "a": [
+            "Reconoce y maneja elementos sintácticos del lenguaje",
+            "Ejecuta cualquier programa sin traducción",
+            "Impide escribir instrucciones incorrectas en todos los casos",
+            "Sustituye el diseño de la aplicación"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿En qué términos presenta la información un depurador integrado moderno según los apuntes?",
+        "a": [
+            "Únicamente como direcciones y código máquina",
+            "En términos del lenguaje fuente",
+            "Solo mediante diagramas de requisitos",
+            "Exclusivamente mediante documentación externa"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Cuál es un ejemplo de integración entre editor y compilador?",
+        "a": [
+            "Copiar manualmente los errores en otro documento",
+            "Abrir directamente la línea de código donde se ha detectado un error",
+            "Cerrar el editor cada vez que se compila",
+            "Buscar el archivo sin ninguna referencia a la línea"
+        ],
+        "c": 1
+    }
+];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        document.getElementById('feedback').textContent = '';
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        all.forEach(option => { option.disabled = true; });
+        document.getElementById('feedback').textContent = i === correct
+            ? '¡Correcto!'
+            : 'Respuesta incorrecta. La respuesta correcta es: ' + data[current].a[correct];
+        document.getElementById('next').style.display = 'block';
+        document.getElementById('next').focus();
+        if(current === data.length - 1) document.getElementById('next').innerText = "Ver Mi Nota";
+    }
+
+    function loadNext() {
+        if (canClick || current >= data.length) return;
+        current++;
+        if (current < data.length) { render(); document.getElementById('question').focus(); }
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('results').focus();
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score / data.length >= 0.9) m.innerText = "¡Excelente! Dominas los contenidos de esta unidad.";
+        else if(score / data.length >= 0.7) m.innerText = "¡Buen trabajo! Tienes una buena base; repasa las preguntas que has fallado.";
+        else m.innerText = "Repasa los niveles CASE, las herramientas del IDE y su integración.";
+    }
+
+    render();
+</script>
+</body>
+</html>

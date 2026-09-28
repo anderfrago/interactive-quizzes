@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiz: Desarrollo de Software</title>
+    <style>
+        :root { --p: #10b981; --s: #64748b; --bg: #f8fafc; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 4px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s ease; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.7rem 0; border: 2px solid #f1f5f9; border-radius: 10px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f0fdf4; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 8px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .tag { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: var(--s); }
+        * { box-sizing: border-box; }
+        #q-box { display: flow-root; }
+        .opt, #question { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .opt:disabled { cursor: default; opacity: 1; }
+        button:focus-visible { outline: 3px solid #0f172a; outline-offset: 3px; }
+        #feedback { line-height: 1.5; }
+        @media (max-width: 600px) { body { padding: 8px; } #q-box { padding: 1.2rem; } .header-info { flex-wrap: wrap; gap: 0.6rem; } }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="header-info">
+            <span class="tag">ED - Evaluación 1 · Unidad 01</span>
+            <span id="counter" style="color: var(--s); font-size: 0.85rem;"></span>
+        </div>
+        <h2 style="margin: 0 0 1.5rem 0; color: #064e3b;">Desarrollo de Software</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 tabindex="-1" id="question" style="line-height: 1.4;"></h3>
+        <div id="options"></div>
+        <p id="feedback" role="status" aria-live="polite"></p>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results" tabindex="-1">
+        <h2 style="color:var(--p)">Simulación Finalizada</h2>
+        <div style="font-size: 4.5rem; margin: 1.5rem 0; font-weight: 800; color: #065f46;" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.1rem; color: var(--s); margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2.5rem; background: var(--p); color:white; border:none; border-radius:8px; cursor:pointer; font-weight: bold;">Reintentar Test</button>
+    </div>
+</div>
+
+<script>
+    // Basado en ED.EV1.UD01 - Desarrollo de Software.pdf, material de clase.
+    const data = [
+    {
+        "q": "¿Qué caracteriza al lenguaje máquina?",
+        "a": [
+            "Utiliza exclusivamente palabras del lenguaje natural",
+            "Es independiente de la arquitectura del procesador",
+            "Se ejecuta únicamente mediante la JVM",
+            "Utiliza instrucciones binarias que la máquina entiende directamente"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué utiliza el ensamblador para representar instrucciones máquina?",
+        "a": [
+            "Consultas declarativas sobre tablas",
+            "Representaciones textuales y direcciones simbólicas",
+            "Clases independientes del hardware",
+            "Diagramas de interfaz sin instrucciones"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué ventaja aporta el nivel de abstracción de un lenguaje de alto nivel?",
+        "a": [
+            "Elimina la necesidad de traducir el programa",
+            "Garantiza que no habrá errores de lógica",
+            "Convierte cualquier programa en código máquina portable",
+            "Reduce la necesidad de conocer los detalles de la arquitectura"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué caracteriza al paradigma imperativo?",
+        "a": [
+            "Describe una secuencia de instrucciones que modifica el estado",
+            "Declara únicamente las propiedades del resultado",
+            "Excluye el uso de variables",
+            "Obliga a expresar todo mediante consultas SQL"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué enfoque representa una consulta SQL que indica qué datos obtener sin detallar el algoritmo?",
+        "a": [
+            "Ensamblador",
+            "Código máquina",
+            "Imperativo de bajo nivel",
+            "Declarativo"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué estructuras de control se asocian a la programación estructurada?",
+        "a": [
+            "Compilación, enlace y carga",
+            "Secuencia, selección e iteración",
+            "Análisis, diseño y pruebas",
+            "Herencia, bytecode y memoria"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué idea es central en la programación orientada a objetos?",
+        "a": [
+            "Escribir todas las instrucciones en un único bloque",
+            "Evitar la reutilización del código",
+            "Encapsular estado y operaciones en objetos definidos mediante clases",
+            "Sustituir las variables por direcciones físicas"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué es el código fuente?",
+        "a": [
+            "El resultado de enlazar bibliotecas binarias",
+            "Las instrucciones escritas por el programador en un lenguaje de programación",
+            "Las instrucciones que siempre ejecuta directamente el procesador",
+            "El registro de errores producido durante las pruebas"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿En qué se convierte el código fuente al compilarlo, según el proceso descrito?",
+        "a": [
+            "En requisitos funcionales",
+            "En código objeto",
+            "En un plan de pruebas",
+            "En documentación de usuario"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué función cumple el enlazador?",
+        "a": [
+            "Redacta el código fuente a partir de requisitos",
+            "Comprueba las necesidades del cliente",
+            "Sustituye las pruebas de ejecución",
+            "Combina código objeto y bibliotecas para obtener el ejecutable"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué distingue al intérprete en el modelo explicado en la unidad?",
+        "a": [
+            "Genera siempre un ejecutable nativo independiente",
+            "Enlaza exclusivamente archivos objeto",
+            "Combina la traducción y la ejecución del código",
+            "Solo revisa la sintaxis sin ejecutar instrucciones"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué necesita un mismo programa interpretado para ejecutarse en otro sistema compatible?",
+        "a": [
+            "El mismo procesador físico que el original",
+            "Un intérprete adecuado en ese sistema",
+            "Convertir todas sus instrucciones a ensamblador manualmente",
+            "Eliminar las bibliotecas que utiliza"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué genera javac al compilar el código fuente Java?",
+        "a": [
+            "Un documento HTML",
+            "Un archivo de código fuente .java nuevo",
+            "Bytecode en archivos .class",
+            "Un ejecutable nativo exclusivo de Windows"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué componente ejecuta el bytecode de Java?",
+        "a": [
+            "La máquina virtual Java (JVM)",
+            "El editor de texto",
+            "El explorador de archivos",
+            "La herramienta de diseño de interfaces"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿En qué fase se recogen requisitos y se delimita el problema?",
+        "a": [
+            "Análisis",
+            "Diseño",
+            "Implementación",
+            "Mantenimiento"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿En qué fase se decide la arquitectura y las estructuras de datos?",
+        "a": [
+            "Diseño",
+            "Análisis de necesidades",
+            "Pruebas de aceptación",
+            "Mantenimiento correctivo"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿En qué fase se escribe el código de acuerdo con el diseño?",
+        "a": [
+            "Recogida de requisitos",
+            "Pruebas",
+            "Implementación",
+            "Planificación inicial"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué se comprueba durante las pruebas?",
+        "a": [
+            "Que todos los archivos tienen la misma longitud",
+            "Que ya no será necesario mantener el software",
+            "Que el programa funciona y cumple los requisitos",
+            "Que se ha elegido el lenguaje más reciente"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué dificultad caracteriza al modelo en cascada descrito?",
+        "a": [
+            "Corregir decisiones de fases anteriores puede resultar costoso",
+            "Impide documentar los requisitos",
+            "Obliga a entregar un incremento en cada día de trabajo",
+            "Elimina las fases de diseño y pruebas"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué permite el desarrollo iterativo frente a esperar al producto completo?",
+        "a": [
+            "Evitar cualquier planificación",
+            "Prescindir del análisis de requisitos",
+            "Garantizar que el primer diseño no cambiará",
+            "Revisar y mejorar la solución en ciclos y recoger feedback"
+        ],
+        "c": 3
+    }
+];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        document.getElementById('feedback').textContent = '';
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        all.forEach(option => { option.disabled = true; });
+        document.getElementById('feedback').textContent = i === correct
+            ? '¡Correcto!'
+            : 'Respuesta incorrecta. La respuesta correcta es: ' + data[current].a[correct];
+        document.getElementById('next').style.display = 'block';
+        document.getElementById('next').focus();
+        if(current === data.length - 1) document.getElementById('next').innerText = "Ver Mi Nota";
+    }
+
+    function loadNext() {
+        if (canClick || current >= data.length) return;
+        current++;
+        if (current < data.length) { render(); document.getElementById('question').focus(); }
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('results').focus();
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score / data.length >= 0.9) m.innerText = "¡Excelente! Dominas los contenidos de esta unidad.";
+        else if(score / data.length >= 0.7) m.innerText = "¡Buen trabajo! Tienes una buena base; repasa las preguntas que has fallado.";
+        else m.innerText = "Repasa los lenguajes, la traducción del código y las fases y modelos de desarrollo.";
+    }
+
+    render();
+</script>
+</body>
+</html>
