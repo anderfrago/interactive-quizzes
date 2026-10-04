@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiz: Control de versiones GitHub</title>
+    <style>
+        :root { --p: #10b981; --s: #64748b; --bg: #f8fafc; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 4px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s ease; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.7rem 0; border: 2px solid #f1f5f9; border-radius: 10px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f0fdf4; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 8px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .tag { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: var(--s); }
+        * { box-sizing: border-box; }
+        #q-box { display: flow-root; }
+        .opt, #question { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .opt:disabled { cursor: default; opacity: 1; }
+        button:focus-visible { outline: 3px solid #0f172a; outline-offset: 3px; }
+        #feedback { line-height: 1.5; }
+        @media (max-width: 600px) { body { padding: 8px; } #q-box { padding: 1.2rem; } .header-info { flex-wrap: wrap; gap: 0.6rem; } }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="header-info">
+            <span class="tag">ED - Evaluación 1 · Unidad 05</span>
+            <span id="counter" style="color: var(--s); font-size: 0.85rem;"></span>
+        </div>
+        <h2 style="margin: 0 0 1.5rem 0; color: #064e3b;">Control de versiones GitHub</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 tabindex="-1" id="question" style="line-height: 1.4;"></h3>
+        <div id="options"></div>
+        <p id="feedback" role="status" aria-live="polite"></p>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results" tabindex="-1">
+        <h2 style="color:var(--p)">Simulación Finalizada</h2>
+        <div style="font-size: 4.5rem; margin: 1.5rem 0; font-weight: 800; color: #065f46;" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.1rem; color: var(--s); margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2.5rem; background: var(--p); color:white; border:none; border-radius:8px; cursor:pointer; font-weight: bold;">Reintentar Test</button>
+    </div>
+</div>
+
+<script>
+    // Basado en ED.EV1.UD05 - Control de versiones GitHub.pptx, material de clase.
+    const data = [
+    {
+        "q": "¿Para qué sirve un sistema de control de versiones?",
+        "a": [
+            "Registrar los cambios de un proyecto y conservar su historial",
+            "Compilar automáticamente cualquier lenguaje",
+            "Sustituir las pruebas del software",
+            "Diseñar las pantallas de una aplicación"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué diferencia hay entre Git y GitHub?",
+        "a": [
+            "Git es un sistema de control de versiones; GitHub ofrece alojamiento y colaboración sobre repositorios Git",
+            "Git es una página web y GitHub un compilador",
+            "Git solo permite proyectos públicos y GitHub solo privados",
+            "Son dos nombres para el mismo programa local"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Dónde puede ejecutarse Git según el material?",
+        "a": [
+            "Únicamente en la web de GitHub",
+            "En un ordenador propio o en un servidor",
+            "Solo dentro de Eclipse",
+            "Exclusivamente en un navegador"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué contiene un repositorio Git?",
+        "a": [
+            "Solo la última copia de cada archivo, sin historial",
+            "Los archivos del proyecto y su historial de revisiones",
+            "Únicamente los ejecutables de la aplicación",
+            "Solo los comentarios de los colaboradores"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué permite conocer el historial de un proyecto?",
+        "a": [
+            "La corrección de todos sus algoritmos sin ejecutar pruebas",
+            "La contraseña de cada colaborador",
+            "Cómo ha evolucionado mediante los cambios registrados",
+            "La versión futura que aún no se ha desarrollado"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Cuál es la función principal de README?",
+        "a": [
+            "Definir los archivos que Git debe ignorar",
+            "Almacenar todas las contraseñas del equipo",
+            "Sustituir el historial de commits",
+            "Presentar el proyecto y proporcionar información para comprenderlo y usarlo"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Para qué sirve el archivo LICENSE descrito en la unidad?",
+        "a": [
+            "Indicar los términos de uso del código",
+            "Contener las instrucciones de compilación de Git",
+            "Guardar las ramas del repositorio",
+            "Listar los conflictos pendientes"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué finalidad tiene .gitignore?",
+        "a": [
+            "Borrar automáticamente todo el historial",
+            "Convertir el repositorio en privado",
+            "Indicar patrones de archivos que Git debe ignorar cuando aún no están versionados",
+            "Impedir que se creen nuevas ramas"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué representa un commit?",
+        "a": [
+            "Una copia independiente en otra cuenta de GitHub",
+            "Un comentario que no registra cambios",
+            "Un registro de cambios en el historial del repositorio",
+            "Una solicitud para borrar el proyecto"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué mensaje describe mejor un commit que corrige las instrucciones de instalación?",
+        "a": [
+            "Cambios",
+            "Archivo",
+            "Cosas nuevas",
+            "Corrige los pasos de instalación del README"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué es Markdown?",
+        "a": [
+            "Un lenguaje de marcado para dar formato al texto mediante símbolos sencillos",
+            "Un lenguaje que compila código Java",
+            "Un formato exclusivo para imágenes",
+            "Un sistema alternativo de ramas"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Para qué sirve previsualizar un archivo Markdown antes de confirmar los cambios?",
+        "a": [
+            "Fusionar automáticamente sus ramas",
+            "Eliminar el historial del archivo",
+            "Comprobar cómo se mostrará su formato",
+            "Crear un fork del repositorio"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué indica la ruta docs/guia.md?",
+        "a": [
+            "Dos archivos independientes en la raíz",
+            "Un archivo guia.md situado dentro de la carpeta docs",
+            "Una rama llamada guia.md",
+            "Una solicitud de revisión llamada docs"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Por qué se utiliza un archivo .keep en una carpeta que se quiere conservar vacía?",
+        "a": [
+            "Git exige que todos los directorios contengan un archivo ejecutable",
+            ".keep impide que nadie añada contenido a la carpeta",
+            "Git registra archivos y ese archivo permite conservar la ruta de la carpeta",
+            ".keep convierte la carpeta en una rama"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué tipos de archivos puede contener un repositorio según los ejemplos?",
+        "a": [
+            "Solo código fuente Java",
+            "Únicamente archivos Markdown",
+            "Solo archivos que se puedan compilar",
+            "Archivos de texto y archivos binarios, como imágenes"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué es un fork en GitHub?",
+        "a": [
+            "Un cambio de nombre de la rama principal",
+            "Un comentario sobre una línea de código",
+            "Una copia de un repositorio en otra cuenta que mantiene la relación con el original",
+            "Un archivo comprimido sin relación con su origen"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿A qué se refiere upstream en el ejemplo de un fork?",
+        "a": [
+            "Al repositorio original del que procede el fork",
+            "A la carpeta de imágenes del fork",
+            "Al último archivo añadido",
+            "Al nombre obligatorio de todas las ramas"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué ocurre al confirmar un cambio en tu fork?",
+        "a": [
+            "El cambio queda en tu copia y no modifica por sí solo el repositorio original",
+            "Se aplica inmediatamente al original",
+            "Se eliminan las ramas del original",
+            "Se aceptan automáticamente todas tus pull requests"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Cómo puedes proponer que tus cambios de un fork se incorporen al repositorio original?",
+        "a": [
+            "Renombrando el README del fork",
+            "Eliminando el historial del original",
+            "Abriendo una pull request hacia la rama de destino",
+            "Cambiando únicamente la descripción de tu perfil"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué representan base y head al comparar una pull request?",
+        "a": [
+            "Base es el autor y head la persona que revisa",
+            "Base es la rama de destino y head la rama que aporta los cambios",
+            "Base es el README y head la licencia",
+            "Base y head son siempre la misma rama"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué muestra un diff?",
+        "a": [
+            "Solo los nombres de quienes tienen cuenta",
+            "El resultado de ejecutar todos los programas",
+            "El espacio libre del servidor",
+            "Las diferencias entre las versiones que se comparan"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué conviene explicar al abrir una pull request?",
+        "a": [
+            "Qué cambia la propuesta y por qué se realiza",
+            "La contraseña necesaria para entrar en la cuenta",
+            "Solo el número total de carpetas del equipo",
+            "El tema visual del editor usado"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Para qué sirve una rama?",
+        "a": [
+            "Crear necesariamente otro repositorio en otra cuenta",
+            "Desarrollar una línea de trabajo sin modificar directamente las demás ramas",
+            "Guardar archivos que nunca tendrán historial",
+            "Impedir que otros colaboradores vean el proyecto"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué contiene una rama recién creada desde otra?",
+        "a": [
+            "El estado de la rama de origen en el punto desde el que se crea",
+            "Un repositorio vacío sin archivos",
+            "Solo los archivos README y LICENSE",
+            "Todos los cambios futuros de cualquier otra rama"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Puede una pull request incluir cambios en varios archivos?",
+        "a": [
+            "No, exige un repositorio distinto por archivo",
+            "Sí, puede reunir los cambios de varios archivos de la rama propuesta",
+            "Solo si todos los archivos son imágenes",
+            "Solo si no se han hecho commits"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Para qué sirve un comentario de línea durante la revisión?",
+        "a": [
+            "Cambiar la rama de destino sin avisar",
+            "Confirmar automáticamente el código del autor",
+            "Borrar la línea del historial",
+            "Señalar una observación sobre una parte concreta del cambio"
+        ],
+        "c": 3
+    },
+    {
+        "q": "Te solicitan correcciones en una pull request abierta. ¿Cómo incorporas nuevos cambios a esa propuesta?",
+        "a": [
+            "Creando un fork nuevo para cada corrección",
+            "Editando una rama sin relación con la propuesta",
+            "Modificando únicamente el perfil de GitHub",
+            "Confirmándolos en la misma rama de origen de la pull request"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué hace la fusión de una pull request?",
+        "a": [
+            "Elimina todas las ramas del repositorio",
+            "Incorpora los cambios propuestos a su rama de destino",
+            "Convierte todos los archivos en Markdown",
+            "Publica siempre una nueva versión ejecutable de la aplicación"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Cuándo puede producirse un conflicto de fusión?",
+        "a": [
+            "Siempre que se modifica un archivo README",
+            "Cada vez que dos personas abren el repositorio",
+            "Solo cuando se sube una imagen",
+            "Cuando hay cambios incompatibles y Git no puede decidir cómo combinarlos automáticamente"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Cómo se resuelve un conflicto de texto según el procedimiento del material?",
+        "a": [
+            "Eliminar las marcas sin comprobar el contenido resultante",
+            "Revisar las versiones, dejar el contenido adecuado, retirar las marcas y confirmar la resolución",
+            "Borrar siempre los cambios del otro colaborador",
+            "Cerrar la página sin guardar y dar el conflicto por resuelto"
+        ],
+        "c": 1
+    }
+];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        document.getElementById('feedback').textContent = '';
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        all.forEach(option => { option.disabled = true; });
+        document.getElementById('feedback').textContent = i === correct
+            ? '¡Correcto!'
+            : 'Respuesta incorrecta. La respuesta correcta es: ' + data[current].a[correct];
+        document.getElementById('next').style.display = 'block';
+        document.getElementById('next').focus();
+        if(current === data.length - 1) document.getElementById('next').innerText = "Ver Mi Nota";
+    }
+
+    function loadNext() {
+        if (canClick || current >= data.length) return;
+        current++;
+        if (current < data.length) { render(); document.getElementById('question').focus(); }
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('results').focus();
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score / data.length >= 0.9) m.innerText = "¡Excelente! Dominas los contenidos de esta unidad.";
+        else if(score / data.length >= 0.7) m.innerText = "¡Buen trabajo! Tienes una buena base; repasa las preguntas que has fallado.";
+        else m.innerText = "Repasa repositorios, commits, ramas, forks, pull requests y resolución de conflictos.";
+    }
+
+    render();
+</script>
+</body>
+</html>

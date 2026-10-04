@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiz: UML - Casos de uso y actividad</title>
+    <style>
+        :root { --p: #10b981; --s: #64748b; --bg: #f8fafc; --txt: #1e293b; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); display: flex; justify-content: center; padding: 20px; }
+        #q-box { background: white; max-width: 800px; width: 100%; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 4px; margin: 1.5rem 0; overflow: hidden; }
+        #bar { height: 100%; background: var(--p); width: 0%; transition: 0.4s ease; }
+        .opt { display: block; width: 100%; padding: 1rem; margin: 0.7rem 0; border: 2px solid #f1f5f9; border-radius: 10px; text-align: left; cursor: pointer; background: #fff; font-size: 1rem; transition: 0.2s; }
+        .opt:hover { border-color: var(--p); background: #f0fdf4; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534; font-weight: 600; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        #next { background: var(--p); color: white; border: none; padding: 1rem 2.5rem; border-radius: 8px; cursor: pointer; float: right; display: none; font-weight: 600; }
+        #results { display: none; text-align: center; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .tag { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: var(--s); }
+        * { box-sizing: border-box; }
+        #q-box { display: flow-root; }
+        .opt, #question { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .opt:disabled { cursor: default; opacity: 1; }
+        button:focus-visible { outline: 3px solid #0f172a; outline-offset: 3px; }
+        #feedback { line-height: 1.5; }
+        @media (max-width: 600px) { body { padding: 8px; } #q-box { padding: 1.2rem; } .header-info { flex-wrap: wrap; gap: 0.6rem; } }
+    </style>
+</head>
+<body>
+
+<div id="q-box">
+    <div id="quiz-area">
+        <div class="header-info">
+            <span class="tag">ED - Evaluación 1 · Unidad 06</span>
+            <span id="counter" style="color: var(--s); font-size: 0.85rem;"></span>
+        </div>
+        <h2 style="margin: 0 0 1.5rem 0; color: #064e3b;">UML - Casos de uso y actividad</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <h3 tabindex="-1" id="question" style="line-height: 1.4;"></h3>
+        <div id="options"></div>
+        <p id="feedback" role="status" aria-live="polite"></p>
+        <button id="next" onclick="loadNext()">Siguiente</button>
+    </div>
+
+    <div id="results" tabindex="-1">
+        <h2 style="color:var(--p)">Simulación Finalizada</h2>
+        <div style="font-size: 4.5rem; margin: 1.5rem 0; font-weight: 800; color: #065f46;" id="score-val"></div>
+        <p id="eval-msg" style="font-size: 1.1rem; color: var(--s); margin-bottom: 2rem;"></p>
+        <button onclick="location.reload()" style="padding: 1rem 2.5rem; background: var(--p); color:white; border:none; border-radius:8px; cursor:pointer; font-weight: bold;">Reintentar Test</button>
+    </div>
+</div>
+
+<script>
+    // Basado en ED.EV1.UD06. - Ingeniería del Software con UML_v02.pdf, material de clase.
+    const data = [
+    {
+        "q": "¿Qué muestra un diagrama de casos de uso?",
+        "a": [
+            "La implementación interna de cada método",
+            "Las funcionalidades del sistema desde la perspectiva de los actores",
+            "El orden exacto de todas las instrucciones del programa",
+            "La distribución física de los archivos del proyecto"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué representa un actor en un modelo de casos de uso?",
+        "a": [
+            "Una persona concreta identificada siempre por su nombre",
+            "Una variable interna de la aplicación",
+            "Una pantalla perteneciente al sistema",
+            "Un rol externo al sistema que interactúa con él"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Cuál puede ser un actor además de una persona?",
+        "a": [
+            "Un sistema o dispositivo externo que interactúa con el sistema modelado",
+            "Cualquier método privado de una clase",
+            "Una tabla interna que nunca interactúa con el exterior",
+            "Una instrucción del algoritmo"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué pregunta ayuda a identificar casos de uso?",
+        "a": [
+            "¿Cuántas líneas tendrá cada archivo?",
+            "¿Qué objetivos quieren alcanzar los actores con el sistema?",
+            "¿Qué color tendrá el editor del programador?",
+            "¿Qué nombre tendrán todas las variables locales?"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Cómo se colocan los elementos respecto al límite del sistema?",
+        "a": [
+            "Los actores dentro y los casos de uso fuera",
+            "Todos los elementos obligatoriamente fuera",
+            "Los actores fuera del rectángulo y los casos de uso dentro",
+            "Solo las notas dentro y el resto fuera"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué figura representa habitualmente un caso de uso?",
+        "a": [
+            "Una elipse",
+            "Un rombo",
+            "Una barra gruesa",
+            "Un círculo negro de inicio"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué significa la asociación entre un actor y un caso de uso?",
+        "a": [
+            "Que el actor hereda del caso de uso",
+            "Que el caso de uso se ejecuta siempre antes que los demás",
+            "Que ambas figuras representan la misma entidad",
+            "Que el actor participa en la interacción representada"
+        ],
+        "c": 3
+    },
+    {
+        "q": "Exalumno y Empleador son tipos de Usuario. ¿Qué relación permite representar esa idea entre actores?",
+        "a": [
+            "Include",
+            "Extend",
+            "Generalización",
+            "Flujo de control"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué significa la multiplicidad 0..1?",
+        "a": [
+            "Exactamente una instancia vinculada",
+            "Cero o una instancia vinculada",
+            "Una o más instancias vinculadas",
+            "Cualquier cantidad, con un mínimo de dos"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué significa la multiplicidad 1..*?",
+        "a": [
+            "Ninguna instancia vinculada",
+            "Como máximo una instancia vinculada",
+            "Una o más instancias vinculadas",
+            "Exactamente dos instancias vinculadas"
+        ],
+        "c": 2
+    },
+    {
+        "q": "Varios casos de uso incorporan un mismo comportamiento requerido. ¿Qué relación permite reutilizarlo como caso independiente?",
+        "a": [
+            "Include",
+            "Extend",
+            "Asociación entre actores",
+            "Flujo de control"
+        ],
+        "c": 0
+    },
+    {
+        "q": "Añadir una carta de presentación es opcional al inscribirse en una oferta. ¿Qué relación encaja con el ejemplo del material?",
+        "a": [
+            "Include desde Añadir carta hacia el actor",
+            "Extend desde Añadir carta hacia Inscribirse en oferta",
+            "Generalización entre la carta y el empleador",
+            "Asociación entre dos actores"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Hacia dónde apunta la flecha de una relación extend?",
+        "a": [
+            "Hacia el actor que inicia la interacción",
+            "Hacia el caso de uso que aporta la extensión",
+            "Hacia el límite del sistema",
+            "Hacia el caso de uso base que se amplía"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Dónde se describen los pasos detallados de la interacción de un caso de uso?",
+        "a": [
+            "Exclusivamente en el nombre del actor",
+            "En la multiplicidad de la asociación",
+            "En el grosor del límite del sistema",
+            "En su documentación"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Para qué pueden utilizarse los casos de uso al comprobar el sistema?",
+        "a": [
+            "Para preparar pruebas que verifiquen los requisitos funcionales",
+            "Para garantizar que no hace falta ejecutar pruebas",
+            "Para medir directamente el rendimiento del procesador",
+            "Para decidir automáticamente todos los detalles de implementación"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué representa un diagrama de actividad?",
+        "a": [
+            "Solo los actores y sus objetivos sin mostrar los pasos",
+            "Exclusivamente las relaciones de herencia entre clases",
+            "El flujo de un proceso, con acciones y posibles alternativas",
+            "Los commits realizados sobre el código"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué relación puede haber entre un caso de uso y un diagrama de actividad?",
+        "a": [
+            "Cada actor debe convertirse siempre en un nodo inicial",
+            "El diagrama de actividad sustituye todos los requisitos",
+            "El diagrama de actividad puede detallar el flujo del caso de uso",
+            "No pueden representar aspectos del mismo proceso"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué símbolo indica el inicio en los diagramas de actividad mostrados?",
+        "a": [
+            "Un círculo negro relleno",
+            "Una elipse con el nombre del sistema",
+            "Un rombo vacío",
+            "Una barra de sincronización"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué símbolo indica el final de actividad en los ejemplos?",
+        "a": [
+            "Un rectángulo de esquinas redondeadas",
+            "Un círculo negro rodeado por otra circunferencia",
+            "Una flecha discontinua con include",
+            "Un monigote"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Cómo se representa una acción en los diagramas del material?",
+        "a": [
+            "Mediante un monigote",
+            "Mediante un rectángulo de límite del sistema",
+            "Mediante una línea de generalización",
+            "Mediante un rectángulo con esquinas redondeadas"
+        ],
+        "c": 3
+    },
+    {
+        "q": "¿Qué representa una flecha de control de flujo?",
+        "a": [
+            "La herencia entre dos actores",
+            "La pertenencia de un usuario a un grupo",
+            "El paso del control de un nodo al siguiente",
+            "Una relación extend entre casos de uso"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué nodo permite elegir un camino según una condición?",
+        "a": [
+            "Un nodo inicial representado por un círculo",
+            "Una separación de flujos paralelos",
+            "Una nota de documentación",
+            "Un nodo de decisión representado por un rombo"
+        ],
+        "c": 3
+    },
+    {
+        "q": "Tras validar un formulario, el flujo continúa por [válido] o por [no válido]. ¿Qué se está modelando?",
+        "a": [
+            "Una decisión con caminos alternativos",
+            "Dos acciones que siempre se ejecutan en paralelo",
+            "Una generalización de actores",
+            "La finalización obligatoria de toda la actividad"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Qué función cumple un nodo merge o fusión?",
+        "a": [
+            "Esperar obligatoriamente a que terminen todos los caminos paralelos",
+            "Iniciar dos acciones independientes simultáneamente",
+            "Definir un nuevo actor del sistema",
+            "Reunir caminos alternativos en un flujo de continuación"
+        ],
+        "c": 3
+    },
+    {
+        "q": "Dos caminos alternativos vuelven a una acción común. ¿Qué nodo resulta adecuado para reunirlos?",
+        "a": [
+            "Una unión de sincronización o join",
+            "Una fusión o merge",
+            "Un nuevo nodo inicial",
+            "Un límite de sistema"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué función cumple una separación o fork en una actividad?",
+        "a": [
+            "Escoger únicamente una alternativa según una condición",
+            "Finalizar toda la actividad",
+            "Abrir varios flujos que pueden avanzar en paralelo",
+            "Relacionar un actor con su caso de uso"
+        ],
+        "c": 2
+    },
+    {
+        "q": "¿Qué función cumple una unión o join de los flujos paralelos del ejemplo?",
+        "a": [
+            "Escoger al azar uno de los flujos",
+            "Sincronizarlos antes de continuar",
+            "Iniciar otra actividad sin esperar ninguna rama",
+            "Convertir las acciones en casos de uso"
+        ],
+        "c": 1
+    },
+    {
+        "q": "¿Qué símbolo se utiliza en los apuntes para la separación y unión de flujos paralelos?",
+        "a": [
+            "Una elipse",
+            "Una barra gruesa",
+            "Un monigote",
+            "Un rectángulo de límite del sistema"
+        ],
+        "c": 1
+    },
+    {
+        "q": "Después de guardar una oferta, se preparan en paralelo dos avisos y se continúa cuando ambos terminan. ¿Qué combinación lo representa?",
+        "a": [
+            "Fork para separar los flujos y join para sincronizarlos",
+            "Decisión para elegir un aviso y merge para continuar",
+            "Dos nodos iniciales unidos mediante include",
+            "Una generalización entre los avisos"
+        ],
+        "c": 0
+    },
+    {
+        "q": "¿Para qué sirven las notas en un diagrama de actividad?",
+        "a": [
+            "Para aclarar condiciones o aportar explicaciones sobre el proceso",
+            "Para sustituir todas las flechas de control",
+            "Para ejecutar automáticamente las acciones",
+            "Para convertir un flujo alternativo en paralelo"
+        ],
+        "c": 0
+    }
+];
+
+    let current = 0, score = 0, canClick = true;
+
+    function render() {
+        canClick = true;
+        document.getElementById('feedback').textContent = '';
+        const qData = data[current];
+        document.getElementById('question').innerText = qData.q;
+        document.getElementById('counter').innerText = `PREGUNTA ${current + 1} DE ${data.length}`;
+        document.getElementById('bar').style.width = `${((current + 1) / data.length) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        qData.a.forEach((txt, i) => {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.innerText = txt;
+            b.onclick = () => check(i, b);
+            optCont.appendChild(b);
+        });
+
+        document.getElementById('next').style.display = 'none';
+    }
+
+    function check(i, btn) {
+        if (!canClick) return;
+        canClick = false;
+        const correct = data[current].c;
+        const all = document.querySelectorAll('.opt');
+        
+        if (i === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            all[correct].classList.add('correct');
+        }
+        all.forEach(option => { option.disabled = true; });
+        document.getElementById('feedback').textContent = i === correct
+            ? '¡Correcto!'
+            : 'Respuesta incorrecta. La respuesta correcta es: ' + data[current].a[correct];
+        document.getElementById('next').style.display = 'block';
+        document.getElementById('next').focus();
+        if(current === data.length - 1) document.getElementById('next').innerText = "Ver Mi Nota";
+    }
+
+    function loadNext() {
+        if (canClick || current >= data.length) return;
+        current++;
+        if (current < data.length) { render(); document.getElementById('question').focus(); }
+        else showFinal();
+    }
+
+    function showFinal() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('results').focus();
+        document.getElementById('score-val').innerText = `${score} / ${data.length}`;
+        const m = document.getElementById('eval-msg');
+        if(score / data.length >= 0.9) m.innerText = "¡Excelente! Dominas los contenidos de esta unidad.";
+        else if(score / data.length >= 0.7) m.innerText = "¡Buen trabajo! Tienes una buena base; repasa las preguntas que has fallado.";
+        else m.innerText = "Repasa actores, relaciones entre casos de uso, decisiones, fusiones y flujos paralelos.";
+    }
+
+    render();
+</script>
+</body>
+</html>
